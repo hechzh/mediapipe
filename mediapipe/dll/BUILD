@@ -1,0 +1,49 @@
+cc_binary(
+    name = "holistic_tracking",
+    srcs = [
+        "holistic_tracking.cc",
+        "holistic_tracking.h",
+        "holistic_tracking_api.cc",
+        "holistic_tracking_api.h",
+    ],
+    linkshared = True,
+    deps = [
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/formats:image_frame",
+        "//mediapipe/framework/formats:image_frame_opencv",
+        "//mediapipe/framework/port:file_helpers",
+        "//mediapipe/framework/port:opencv_core",
+        "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/framework/port:status",
+        "//mediapipe/graphs/holistic_tracking:holistic_tracking_onnx_cuda_graph_deps",
+        "//mediapipe/util:resource_util",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@windows_opencv//:opencv",
+    ],
+)
+
+cc_binary(
+    name = "main",
+    srcs = [
+        "holistic_tracking.cc",
+        "holistic_tracking.h",
+        "holistic_tracking_api.cc",
+        "holistic_tracking_api.h",
+        "main.cpp",
+    ],
+    deps = [
+        "//mediapipe/framework:calculator_framework",
+        "//mediapipe/framework/formats:image_frame",
+        "//mediapipe/framework/formats:image_frame_opencv",
+        "//mediapipe/framework/port:file_helpers",
+        "//mediapipe/framework/port:opencv_core",
+        "//mediapipe/framework/port:parse_text_proto",
+        "//mediapipe/framework/port:status",
+        "//mediapipe/graphs/holistic_tracking:holistic_tracking_onnx_cuda_graph_deps",
+        "//mediapipe/util:resource_util",
+        "@com_google_absl//absl/flags:flag",
+        "@com_google_absl//absl/flags:parse",
+        "@windows_opencv//:opencv",
+    ],
+)
