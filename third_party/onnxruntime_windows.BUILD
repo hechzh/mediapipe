@@ -1,3 +1,5 @@
+ONNXRUNTIME_VERSION = "1.12.0"  # @unused
+
 cc_library(
     name = "onnxruntime",
     srcs = [
