@@ -2,16 +2,16 @@
 # executed with onnxruntime on tensorrt.) This graph tries to skip face detection as much as possible
 # by using previously detected/predicted landmarks for new images.
 #
-# It is required that "face_detection_short_range.onnxruntime" is available at
-# "mediapipe/modules/face_detection/face_detection_short_range.onnxruntime"
+# It is required that "face_detection_short_range.onnx" is available at
+# "mediapipe/modules/face_detection/face_detection_short_range.onnx"
 # path during execution.
 #
-# It is required that "face_landmark.onnxruntime" is available at
-# "mediapipe/modules/face_landmark/face_landmark.onnxruntime"
+# It is required that "face_landmark.onnx" is available at
+# "mediapipe/modules/face_landmark/face_landmark.onnx"
 # path during execution if `with_attention` is not set or set to `false`.
 #
-# It is required that "face_landmark_with_attention.onnxruntime" is available at
-# "mediapipe/modules/face_landmark/face_landmark_with_attention.onnxruntime"
+# It is required that "face_landmark_with_attention.onnx" is available at
+# "mediapipe/modules/face_landmark/face_landmark_with_attention.onnx"
 # path during execution if `with_attention` is set to `true`.
 #
 # EXAMPLE:
