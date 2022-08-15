@@ -10,10 +10,11 @@
 class HolisticTracking {
 public:
     HolisticTracking() = default;
-    ~HolisticTracking();
+    ~HolisticTracking() = default;
 
     bool Init(const std::string& graphPath, const std::string& basePath);
     void Detect(const cv::Mat& frame, cv::Mat& output);
+    void Release();
 
 private:
     bool MediaPipeInitGraph(const std::string& graphPath);

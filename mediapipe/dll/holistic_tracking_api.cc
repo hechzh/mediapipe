@@ -10,3 +10,7 @@ DllExport bool Init(const std::string& graphPath, const std::string& basePath) {
 DllExport void Detect(const cv::Mat& input, cv::Mat& output) {
     holisticTracking.Detect(input, output);
 }
+
+DllExport void Release() {
+    holisticTracking.Release();
+}

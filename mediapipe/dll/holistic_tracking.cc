@@ -29,13 +29,19 @@ void HolisticTracking::Detect(const cv::Mat& input, cv::Mat& output) {
         return;
     }
     auto& outputFrame = packet.Get<mediapipe::ImageFrame>();
-    output = mediapipe::formats::MatView(&outputFrame);
+    auto& outputMat = mediapipe::formats::MatView(&outputFrame);
+    outputMat.copyTo(output);
+}
+
+void HolisticTracking ::Release() {
+    MediaPipeRelease();
+    delete inputStream;
+    delete outputStream;
 }
 
 bool HolisticTracking::MediaPipeInitGraph(const std::string& graphPath) {
     std::string calculator_graph_config_contents;
     mediapipe::file::GetContents(graphPath.c_str(), &calculator_graph_config_contents);
-    std::cout << calculator_graph_config_contents << std::endl;
     auto config = mediapipe::ParseTextProtoOrDie<mediapipe::CalculatorGraphConfig>(calculator_graph_config_contents);
     return graph_.Initialize(config).ok();
 }
@@ -58,8 +64,4 @@ bool HolisticTracking::MediaPipeRunGraph() {
 void HolisticTracking::MediaPipeRelease() {
     graph_.CloseInputStream(inputStream);
     graph_.WaitUntilDone();
-}
-
-HolisticTracking ::~HolisticTracking() {
-    MediaPipeRelease();
 }
