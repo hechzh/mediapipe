@@ -1,10 +1,14 @@
 cc_binary(
-    name = "holistic_tracking",
+    name = "mediapipe",
     srcs = [
-        "holistic_tracking.cc",
-        "holistic_tracking.h",
-        "holistic_tracking_api.cc",
-        "holistic_tracking_api.h",
+        "mediapipe_api.cc",
+        "mediapipe_api.h",
+        "mediapipe_dll.cc",
+        "mediapipe_dll.h",
+        "mediapipe_interface.h",
+        "mediapipe_log.h",
+        "mediapipe_observer.cc",
+        "mediapipe_observer.h",
     ],
     linkshared = True,
     deps = [
