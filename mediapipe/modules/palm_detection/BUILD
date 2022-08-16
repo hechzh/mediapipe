@@ -55,6 +55,34 @@ mediapipe_simple_subgraph(
 )
 
 mediapipe_simple_subgraph(
+    name = "palm_detection_onnx_cuda",
+    graph = "palm_detection_onnx_cuda.pbtxt",
+    register_as = "PalmDetectionOnnxCUDA",
+    deps = [
+        "//mediapipe/calculators/tensor:image_to_tensor_calculator",
+        "//mediapipe/calculators/tensor:inference_calculator_onnx_cuda",
+        "//mediapipe/calculators/tensor:tensors_to_detections_calculator",
+        "//mediapipe/calculators/tflite:ssd_anchors_calculator",
+        "//mediapipe/calculators/util:detection_letterbox_removal_calculator",
+        "//mediapipe/calculators/util:non_max_suppression_calculator",
+    ],
+)
+
+mediapipe_simple_subgraph(
+    name = "palm_detection_onnx_tensorrt",
+    graph = "palm_detection_onnx_tensorrt.pbtxt",
+    register_as = "PalmDetectionOnnxTensorRT",
+    deps = [
+        "//mediapipe/calculators/tensor:image_to_tensor_calculator",
+        "//mediapipe/calculators/tensor:inference_calculator_onnx_tensorrt",
+        "//mediapipe/calculators/tensor:tensors_to_detections_calculator",
+        "//mediapipe/calculators/tflite:ssd_anchors_calculator",
+        "//mediapipe/calculators/util:detection_letterbox_removal_calculator",
+        "//mediapipe/calculators/util:non_max_suppression_calculator",
+    ],
+)
+
+mediapipe_simple_subgraph(
     name = "palm_detection_gpu",
     graph = "palm_detection_gpu.pbtxt",
     register_as = "PalmDetectionGpu",

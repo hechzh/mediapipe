@@ -190,6 +190,52 @@ mediapipe_simple_subgraph(
 )
 
 mediapipe_simple_subgraph(
+    name = "hand_landmark_tracking_onnx_cuda",
+    graph = "hand_landmark_tracking_onnx_cuda.pbtxt",
+    register_as = "HandLandmarkTrackingOnnxCUDA",
+    deps = [
+        ":hand_landmark_onnx_cuda",
+        ":hand_landmark_landmarks_to_roi",
+        ":palm_detection_detection_to_roi",
+        "//mediapipe/calculators/core:begin_loop_calculator",
+        "//mediapipe/calculators/core:clip_vector_size_calculator",
+        "//mediapipe/calculators/core:constant_side_packet_calculator",
+        "//mediapipe/calculators/core:end_loop_calculator",
+        "//mediapipe/calculators/core:flow_limiter_calculator",
+        "//mediapipe/calculators/core:gate_calculator",
+        "//mediapipe/calculators/core:previous_loopback_calculator",
+        "//mediapipe/calculators/image:image_properties_calculator",
+        "//mediapipe/calculators/util:association_norm_rect_calculator",
+        "//mediapipe/calculators/util:collection_has_min_size_calculator",
+        "//mediapipe/calculators/util:filter_collection_calculator",
+        "//mediapipe/modules/palm_detection:palm_detection_onnx_cuda",
+    ],
+)
+
+mediapipe_simple_subgraph(
+    name = "hand_landmark_tracking_onnx_tensorrt",
+    graph = "hand_landmark_tracking_onnx_tensorrt.pbtxt",
+    register_as = "HandLandmarkTrackingOnnxTensorRT",
+    deps = [
+        ":hand_landmark_onnx_tensorrt",
+        ":hand_landmark_landmarks_to_roi",
+        ":palm_detection_detection_to_roi",
+        "//mediapipe/calculators/core:begin_loop_calculator",
+        "//mediapipe/calculators/core:clip_vector_size_calculator",
+        "//mediapipe/calculators/core:constant_side_packet_calculator",
+        "//mediapipe/calculators/core:end_loop_calculator",
+        "//mediapipe/calculators/core:flow_limiter_calculator",
+        "//mediapipe/calculators/core:gate_calculator",
+        "//mediapipe/calculators/core:previous_loopback_calculator",
+        "//mediapipe/calculators/image:image_properties_calculator",
+        "//mediapipe/calculators/util:association_norm_rect_calculator",
+        "//mediapipe/calculators/util:collection_has_min_size_calculator",
+        "//mediapipe/calculators/util:filter_collection_calculator",
+        "//mediapipe/modules/palm_detection:palm_detection_onnx_tensorrt",
+    ],
+)
+
+mediapipe_simple_subgraph(
     name = "palm_detection_detection_to_roi",
     graph = "palm_detection_detection_to_roi.pbtxt",
     register_as = "PalmDetectionDetectionToRoi",

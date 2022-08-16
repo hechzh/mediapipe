@@ -32,6 +32,46 @@ cc_binary(
     ],
 )
 
+cc_binary(
+    name = "hand_tracking_cpu_fps",
+    deps = [
+        "//mediapipe/examples/desktop:demo_run_graph_main_fps",
+        "//mediapipe/graphs/hand_tracking:desktop_tflite_calculators",
+    ],
+)
+
+cc_binary(
+    name = "hand_tracking_onnx_cuda",
+    deps = [
+        "//mediapipe/examples/desktop:demo_run_graph_main",
+        "//mediapipe/graphs/hand_tracking:desktop_onnx_cuda_calculators",
+    ],
+)
+
+cc_binary(
+    name = "hand_tracking_onnx_cuda_fps",
+    deps = [
+        "//mediapipe/examples/desktop:demo_run_graph_main_fps",
+        "//mediapipe/graphs/hand_tracking:desktop_onnx_cuda_calculators",
+    ],
+)
+
+cc_binary(
+    name = "hand_tracking_onnx_tensorrt",
+    deps = [
+        "//mediapipe/examples/desktop:demo_run_graph_main",
+        "//mediapipe/graphs/hand_tracking:desktop_onnx_tensorrt_calculators",
+    ],
+)
+
+cc_binary(
+    name = "hand_tracking_onnx_tensorrt_fps",
+    deps = [
+        "//mediapipe/examples/desktop:demo_run_graph_main_fps",
+        "//mediapipe/graphs/hand_tracking:desktop_onnx_tensorrt_calculators",
+    ],
+)
+
 # Linux only
 cc_binary(
     name = "hand_tracking_gpu",

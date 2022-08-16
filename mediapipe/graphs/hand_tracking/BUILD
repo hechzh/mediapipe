@@ -49,6 +49,28 @@ cc_library(
     ],
 )
 
+cc_library(
+    name = "desktop_onnx_cuda_calculators",
+    deps = [
+        ":desktop_offline_calculators",
+        "//mediapipe/calculators/core:constant_side_packet_calculator",
+        "//mediapipe/calculators/core:merge_calculator",
+        "//mediapipe/graphs/hand_tracking/subgraphs:hand_renderer_cpu",
+        "//mediapipe/modules/hand_landmark:hand_landmark_tracking_onnx_cuda",
+    ],
+)
+
+cc_library(
+    name = "desktop_onnx_tensorrt_calculators",
+    deps = [
+        ":desktop_offline_calculators",
+        "//mediapipe/calculators/core:constant_side_packet_calculator",
+        "//mediapipe/calculators/core:merge_calculator",
+        "//mediapipe/graphs/hand_tracking/subgraphs:hand_renderer_cpu",
+        "//mediapipe/modules/hand_landmark:hand_landmark_tracking_onnx_tensorrt",
+    ],
+)
+
 mediapipe_binary_graph(
     name = "hand_tracking_desktop_live_binary_graph",
     graph = "hand_tracking_desktop_live.pbtxt",
