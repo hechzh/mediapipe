@@ -20,6 +20,13 @@
 
 3. 编译[Windows样例](/windows_build_example.md)
 
+## 支持CUDA和TensorRT的Solutions
+
+- [x] Face Detection
+- [X] Hand Tracking
+- [X] Pose Tracking
+- [X] Holistic Tracking
+
 ## TODO
 
 - [ ] face_landmark_with_attention模型无法使用
