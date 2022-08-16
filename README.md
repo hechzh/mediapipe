@@ -1,5 +1,7 @@
 ![MediaPipe](docs/logo.png) 
 
+[English](README_EN.md)
+
 [MediaPipe](https://github.com/google/mediapipe)使用TFLite进行推理，在移动设备上有着优秀的性能。
 
 尽管MediaPipe在PC中使用CPU也能达到较好的效果，但是在部分Solutions中的表现不尽如人意（比如[Holistic](https://google.github.io/mediapipe/solutions/holistic.html)）。
