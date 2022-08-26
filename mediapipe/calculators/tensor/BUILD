@@ -245,6 +245,72 @@ cc_library(
     alwayslink = 1,
 )
 
+cc_import(
+    name = "onnxruntime",
+    hdrs = glob([
+        "onnxruntime/include/*.h*",
+    ]),
+    interface_library = "onnxruntime/lib/onnxruntime.lib",
+    shared_library = "onnxruntime/lib/onnxruntime.dll",
+)
+
+cc_import(
+    name = "onnxruntime_providers_shared",
+    hdrs = glob([
+        "onnxruntime/include/*.h*",
+    ]),
+    interface_library = "onnxruntime/lib/onnxruntime_providers_shared.lib",
+    shared_library = "onnxruntime/lib/onnxruntime_providers_shared.dll",
+)
+
+cc_import(
+    name = "onnxruntime_providers_cuda",
+    hdrs = glob([
+        "onnxruntime/include/*.h*",
+    ]),
+    interface_library = "onnxruntime/lib/onnxruntime_providers_cuda.lib",
+    shared_library = "onnxruntime/lib/onnxruntime_providers_cuda.dll",
+)
+
+cc_import(
+    name = "onnxruntime_providers_tensorrt",
+    hdrs = glob([
+        "onnxruntime/include/*.h*",
+    ]),
+    interface_library = "onnxruntime/lib/onnxruntime_providers_tensorrt.lib",
+    shared_library = "onnxruntime/lib/onnxruntime_providers_tensorrt.dll",
+)
+
+cc_library(
+    name = "onnxruntime_cuda",
+    srcs = [
+        "onnxruntime/lib/onnxruntime.dll",
+        "onnxruntime/lib/onnxruntime.lib",
+        "onnxruntime/lib/onnxruntime_providers_cuda.dll",
+        "onnxruntime/lib/onnxruntime_providers_cuda.lib",
+        "onnxruntime/lib/onnxruntime_providers_shared.dll",
+        "onnxruntime/lib/onnxruntime_providers_shared.lib",
+    ],
+    hdrs = glob(["onnxruntime/include/*.h*"]),
+    includes = ["onnxruntime/include/"],
+    linkstatic = 1,
+)
+
+cc_library(
+    name = "onnxruntime_tensorrt",
+    srcs = [
+        "onnxruntime/lib/onnxruntime.dll",
+        "onnxruntime/lib/onnxruntime.lib",
+        "onnxruntime/lib/onnxruntime_providers_shared.dll",
+        "onnxruntime/lib/onnxruntime_providers_shared.lib",
+        "onnxruntime/lib/onnxruntime_providers_tensorrt.dll",
+        "onnxruntime/lib/onnxruntime_providers_tensorrt.lib",
+    ],
+    hdrs = glob(["onnxruntime/include/*.h*"]),
+    includes = ["onnxruntime/include/"],
+    linkstatic = 1,
+)
+
 cc_library(
     name = "inference_calculator_onnx_cuda",
     srcs = [
@@ -265,7 +331,10 @@ cc_library(
         "@org_tensorflow//tensorflow/lite/delegates/xnnpack:xnnpack_delegate",
         "@org_tensorflow//tensorflow/lite:framework_stable",
         "@org_tensorflow//tensorflow/lite/c:c_api_types",
-        "@windows_onnxruntime//:onnxruntime",
+        ":onnxruntime_cuda",
+        ":onnxruntime",
+        ":onnxruntime_providers_shared",
+        ":onnxruntime_providers_cuda",
     ] + select({
         "//conditions:default": [
             "//mediapipe/util:cpu_util",
@@ -297,7 +366,10 @@ cc_library(
         "@org_tensorflow//tensorflow/lite/delegates/xnnpack:xnnpack_delegate",
         "@org_tensorflow//tensorflow/lite:framework_stable",
         "@org_tensorflow//tensorflow/lite/c:c_api_types",
-        "@windows_onnxruntime//:onnxruntime",
+        ":onnxruntime",
+        ":onnxruntime_providers_shared",
+        ":onnxruntime_providers_tensorrt",
+        ":onnxruntime_tensorrt",
     ] + select({
         "//conditions:default": [
             "//mediapipe/util:cpu_util",

@@ -6,3 +6,6 @@ mediapipe/provisioning_profile.mobileprovision
 .user.bazelrc
 .DS_Store
 .vscode
+
+mediapipe/calculators/tensor/onnxruntime/include
+mediapipe/calculators/tensor/onnxruntime/lib
