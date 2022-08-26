@@ -16,11 +16,23 @@
 
     - [CUDA](https://developer.nvidia.com/cuda-toolkit)
     - [cuDNN](https://developer.nvidia.com/cudnn)
-    - [TensorRT(如果你想使用TensorRT进行推理)](https://developer.nvidia.com/tensorrt)
+    - [TensorRT](https://developer.nvidia.com/tensorrt)
 
-2. 安装[ONNX Runtime](https://github.com/microsoft/onnxruntime/releases)
+2. 下载[ONNX Runtime](https://github.com/microsoft/onnxruntime/releases)
 
-3. 编译[Windows样例](/windows_build_example.md)
+    >   将`lib`和`include`文件夹复制到`mediapipe/calculators/tensor/onnxruntime`目录下
+
+3.   将CUDA、cuDNN和TensorRT的`bin`目录添加到环境变量
+
+     >   我的运行环境：
+     >
+     >   -   CUDA 11.7.1_516.94
+     >   -   cuDNN 8.5.0.96_cuda11
+     >   -   TensorRT 8.4.3.1
+     >
+     >   64位Windows环境下cuDNN依赖[zlib](http://www.winimage.com/zLibDll/zlib123dllx64.zip)，下载解压后将`dll_x64`目录下的`zlibwapi.dll`复制到``cuDNN`的`bin`目录下
+
+4. 编译[Windows样例](/windows_build_example.md)
 
 ## 支持CUDA和TensorRT的Solutions
 
@@ -33,10 +45,10 @@
 
 - [ ] face_landmark_with_attention模型无法使用
 
-## BUG
+## 开源许可
 
-1. 编译使用CPU的样例，也依赖onnxruntime.dll（如果有人知道如何解决，欢迎PR）。
+-   [ONNX Runtime](mediapipe/calculators/tensor/onnxruntime/LICENSE)
 
 ## 其他
 
-如果LOGO和开源许可侵犯了您的权益，请立即联系我，谢谢。
+如果LOGO或开源许可侵犯了您的权益，请立即联系我，谢谢。

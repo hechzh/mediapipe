@@ -16,11 +16,23 @@ This project uses [ONNX Runtime](https://github.com/microsoft/onnxruntime), adds
 
     - [CUDA](https://developer.nvidia.com/cuda-toolkit)
     - [cuDNN](https://developer.nvidia.com/cudnn)
-    - [TensorRT(If you want to use TensorRT for inference)](https://developer.nvidia.com/tensorrt)
+    - [TensorRT](https://developer.nvidia.com/tensorrt)
 
-2. Install [ONNX Runtime](https://github.com/microsoft/onnxruntime/releases)
+2. Download [ONNX Runtime](https://github.com/microsoft/onnxruntime/releases)
 
-3. Build [Windows examples](/windows_build_example.md)
+    >   Copy the `lib` and `include` folders to the `mediapipe/calculators/tensor/onnxruntime` directory
+
+3. Add the `bin` directories for CUDA, cuDNN and TensorRT to environment variables
+
+    >   My environment:
+    >
+    >   -   CUDA 11.7.1_516.94
+    >   -   cuDNN 8.5.0.96_cuda11
+    >   -   TensorRT 8.4.3.1
+    >
+    >   cuDNN depends on [zlib](http://www.winimage.com/zLibDll/zlib123dllx64.zip) on 64-bit Windows environment. After downloading and decompressing, copy `zlibwapi.dll` in the `dll_x64` directory to the `bin` directory of `cuDNN`
+
+4. Build [Windows examples](/windows_build_example.md)
 
 ## Solutions that support CUDA and TensorRT
 
@@ -33,10 +45,10 @@ This project uses [ONNX Runtime](https://github.com/microsoft/onnxruntime), adds
 
 - [ ] face_landmark_with_attention model cannot be used.
 
-## BUG
+## LICENSE
 
-1. Build the sample using the CPU also depends on onnxruntime.dll (if anyone knows how to solve it, PR is welcome).
+[ONNX Runtime](mediapipe/calculators/tensor/onnxruntime/LICENSE)
 
 ## Other
 
-If the LOGO and open source license violate your rights, please contact me immediately, thank you.
+If the LOGO or open source license violate your rights, please contact me immediately, thank you.
