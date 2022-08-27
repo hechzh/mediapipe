@@ -30,7 +30,7 @@
      >   -   cuDNN 8.5.0.96_cuda11
      >   -   TensorRT 8.4.3.1
      >
-     >   64位Windows环境下cuDNN依赖[zlib](http://www.winimage.com/zLibDll/zlib123dllx64.zip)，下载解压后将`dll_x64`目录下的`zlibwapi.dll`复制到``cuDNN`的`bin`目录下
+     >   64位Windows环境下cuDNN依赖[zlib](http://www.winimage.com/zLibDll/zlib123dllx64.zip)，下载解压后将`dll_x64`目录下的`zlibwapi.dll`复制到`cuDNN`的`bin`目录下
 
 4. 编译[Windows样例](/windows_build_example.md)
 
