@@ -22,7 +22,7 @@
 
     >   将`lib`和`include`文件夹复制到`mediapipe/calculators/tensor/onnxruntime`目录下
 
-3.   将CUDA、cuDNN和TensorRT的`bin`目录添加到环境变量
+3.   将CUDA、cuDNN的`bin`和TensorRT的`lib`目录添加到环境变量
 
      >   我的运行环境：
      >
@@ -44,6 +44,10 @@
 ## TODO
 
 - [ ] face_landmark_with_attention模型无法使用
+
+## BUG
+
+1. 编译使用CPU的样例，也依赖onnxruntime.dll（如果有人知道如何解决，欢迎PR）。
 
 ## 开源许可
 

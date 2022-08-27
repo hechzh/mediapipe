@@ -22,7 +22,7 @@ This project uses [ONNX Runtime](https://github.com/microsoft/onnxruntime), adds
 
     >   Copy the `lib` and `include` folders to the `mediapipe/calculators/tensor/onnxruntime` directory
 
-3. Add the `bin` directories for CUDA, cuDNN and TensorRT to environment variables
+3. Add the `bin` directories for CUDA, cuDNN and `lib` directory for TensorRT to environment variables
 
     >   My environment:
     >
@@ -44,6 +44,10 @@ This project uses [ONNX Runtime](https://github.com/microsoft/onnxruntime), adds
 ## TODO
 
 - [ ] face_landmark_with_attention model cannot be used.
+
+## BUG
+
+1. Build the sample using the CPU also depends on onnxruntime.dll (if anyone knows how to solve it, PR is welcome).
 
 ## LICENSE
 
