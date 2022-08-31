@@ -63,7 +63,11 @@ mediapipe_simple_subgraph(
         ":face_tracking",
         "//mediapipe/calculators/core:split_proto_list_calculator",
         "//mediapipe/calculators/image:image_properties_calculator",
+        "//mediapipe/calculators/util:landmarks_smoothing_calculator",
+        "//mediapipe/graphs/face_effect/subgraphs:face_landmarks_smoothing",
         "//mediapipe/modules/face_detection:face_detection_short_range_by_roi_onnx_cuda",
+        "//mediapipe/modules/face_geometry:env_generator_calculator",
+        "//mediapipe/modules/face_geometry:face_geometry_from_landmarks",
         "//mediapipe/modules/face_landmark:face_landmark_onnx_cuda",
     ],
 )
@@ -78,7 +82,11 @@ mediapipe_simple_subgraph(
         ":face_tracking",
         "//mediapipe/calculators/core:split_proto_list_calculator",
         "//mediapipe/calculators/image:image_properties_calculator",
+        "//mediapipe/calculators/util:landmarks_smoothing_calculator",
+        "//mediapipe/graphs/face_effect/subgraphs:face_landmarks_smoothing",
         "//mediapipe/modules/face_detection:face_detection_short_range_by_roi_onnx_tensorrt",
+        "//mediapipe/modules/face_geometry:env_generator_calculator",
+        "//mediapipe/modules/face_geometry:face_geometry_from_landmarks",
         "//mediapipe/modules/face_landmark:face_landmark_onnx_tensorrt",
     ],
 )

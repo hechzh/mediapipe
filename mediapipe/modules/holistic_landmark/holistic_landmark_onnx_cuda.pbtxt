@@ -92,6 +92,8 @@ output_stream: "RIGHT_HAND_LANDMARKS:right_hand_landmarks"
 # 468 face landmarks. (NormalizedLandmarkList)
 output_stream: "FACE_LANDMARKS:face_landmarks"
 
+output_stream: "MULTI_FACE_GEOMETRY:multi_face_geometry"
+
 # Segmentation mask. (ImageFrame in ImageFormat::VEC32F1)
 output_stream: "SEGMENTATION_MASK:segmentation_mask"
 
@@ -143,4 +145,5 @@ node {
   input_stream: "FACE_LANDMARKS_FROM_POSE:face_landmarks_from_pose"
   input_side_packet: "REFINE_LANDMARKS:refine_face_landmarks"
   output_stream: "FACE_LANDMARKS:face_landmarks"
+  output_stream: "MULTI_FACE_GEOMETRY:multi_face_geometry"
 }

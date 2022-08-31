@@ -43,6 +43,7 @@ node {
   output_stream: "POSE_ROI:pose_roi"
   output_stream: "POSE_DETECTION:pose_detection"
   output_stream: "FACE_LANDMARKS:face_landmarks"
+  output_stream: "MULTI_FACE_GEOMETRY:multi_face_geometry"
   output_stream: "LEFT_HAND_LANDMARKS:left_hand_landmarks"
   output_stream: "RIGHT_HAND_LANDMARKS:right_hand_landmarks"
 }
