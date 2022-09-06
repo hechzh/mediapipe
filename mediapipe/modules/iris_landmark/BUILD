@@ -37,6 +37,10 @@ mediapipe_simple_subgraph(
         "//mediapipe/calculators/tflite:tflite_tensors_to_landmarks_calculator",
         "//mediapipe/calculators/util:landmark_letterbox_removal_calculator",
         "//mediapipe/calculators/util:landmark_projection_calculator",
+        "//mediapipe/calculators/util:landmarks_smoothing_calculator",
+        "//mediapipe/graphs/face_effect/subgraphs:face_landmarks_smoothing",
+        "//mediapipe/modules/face_geometry:env_generator_calculator",
+        "//mediapipe/modules/face_geometry:face_geometry_from_landmarks",
     ],
 )
 
