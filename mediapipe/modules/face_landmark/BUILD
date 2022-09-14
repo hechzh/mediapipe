@@ -112,6 +112,7 @@ mediapipe_simple_subgraph(
         ":face_landmark_landmarks_to_roi",
         "//mediapipe/calculators/core:begin_loop_calculator",
         "//mediapipe/calculators/core:clip_vector_size_calculator",
+        "//mediapipe/calculators/core:concatenate_vector_calculator",
         "//mediapipe/calculators/core:constant_side_packet_calculator",
         "//mediapipe/calculators/core:end_loop_calculator",
         "//mediapipe/calculators/core:gate_calculator",
@@ -119,7 +120,11 @@ mediapipe_simple_subgraph(
         "//mediapipe/calculators/image:image_properties_calculator",
         "//mediapipe/calculators/util:association_norm_rect_calculator",
         "//mediapipe/calculators/util:collection_has_min_size_calculator",
+        "//mediapipe/calculators/util:landmarks_smoothing_calculator",
+        "//mediapipe/graphs/face_effect/subgraphs:face_landmarks_smoothing",
         "//mediapipe/modules/face_detection:face_detection_short_range_cpu",
+        "//mediapipe/modules/face_geometry:env_generator_calculator",
+        "//mediapipe/modules/face_geometry:face_geometry_from_landmarks",
     ],
 )
 
