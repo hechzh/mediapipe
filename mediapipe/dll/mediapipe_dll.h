@@ -27,6 +27,7 @@ public:
     void SetResourceDir(const std::string& path) override;
     void SetGraph(const std::string& path) override;
     void Detect(const cv::Mat& frame) override;
+    void GetFaceMesh(const LandmarkCallback& callback) override;
     void CreateObserver(const std::string& name, const LandmarkCallback& callback) override;
     void OpenPreview(const MatCallback& callback) override;
     void Start() override;

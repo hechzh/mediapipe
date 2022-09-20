@@ -21,6 +21,8 @@ cc_binary(
         "//mediapipe/framework/port:parse_text_proto",
         "//mediapipe/framework/port:status",
         "//mediapipe/graphs/holistic_tracking:holistic_tracking_onnx_cuda_graph_deps",
+        "//mediapipe/graphs/iris_tracking:iris_tracking_cpu_deps",
+        "//mediapipe/graphs/face_mesh:desktop_live_calculators",
         "//mediapipe/util:resource_util",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/flags:parse",

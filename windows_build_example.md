@@ -71,6 +71,15 @@ bazel build -c opt --define MEDIAPIPE_DISABLE_GPU=1 --action_env PYTHON_BIN_PATH
 bazel-bin/mediapipe/examples/desktop/hand_tracking/hand_tracking_onnx_tensorrt_fps.exe --calculator_graph_config_file=mediapipe/graphs/hand_tracking/hand_detection_desktop_live_onnx_tensorrt.pbtxt --input_video_path=D:/video/pml.mp4
 ```
 
+## Face Mesh
+
+### cpu
+
+```bash
+bazel build -c opt --define MEDIAPIPE_DISABLE_GPU=1 --action_env PYTHON_BIN_PATH="D://Python//python.exe" mediapipe/examples/desktop/face_mesh:face_mesh_cpu
+bazel-bin/mediapipe/examples/desktop/face_mesh/face_mesh_cpu.exe --calculator_graph_config_file=mediapipe/graphs/face_mesh/face_mesh_desktop_live.pbtxt --input_video_path=D:/video/pml.mp4
+```
+
 ## Pose Tracking
 
 ### cpu

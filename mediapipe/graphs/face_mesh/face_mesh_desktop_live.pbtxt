@@ -64,3 +64,77 @@ node {
   input_stream: "DETECTIONS:face_detections"
   output_stream: "IMAGE:output_video"
 }
+
+# Gets the very first and only face from "multi_face_landmarks" vector.
+node {
+  calculator: "SplitNormalizedLandmarkListVectorCalculator"
+  input_stream: "multi_face_landmarks"
+  output_stream: "face_landmarks"
+  node_options: {
+    [type.googleapis.com/mediapipe.SplitVectorCalculatorOptions] {
+      ranges: { begin: 0 end: 1 }
+      element_only: true
+    }
+  }
+}
+
+# Generates an environment that describes the current virtual scene.
+node {
+  calculator: "FaceGeometryEnvGeneratorCalculator"
+  output_side_packet: "ENVIRONMENT:environment"
+  node_options: {
+    [type.googleapis.com/mediapipe.FaceGeometryEnvGeneratorCalculatorOptions] {
+      environment: {
+        origin_point_location: TOP_LEFT_CORNER
+        perspective_camera: {
+          vertical_fov_degrees: 63.0  # 63 degrees
+          near: 1.0  # 1cm
+          far: 10000.0  # 100m
+        }
+      }
+    }
+  }
+}
+
+# Extracts image size from the input images.
+node {
+  calculator: "ImagePropertiesCalculator"
+  input_stream: "IMAGE:input_video"
+  output_stream: "SIZE:image_size"
+}
+
+# Extracts face-related pose landmarks.
+node {
+  calculator: "SplitNormalizedLandmarkListCalculator"
+  input_stream: "face_landmarks"
+  output_stream: "face_landmarks_without_iris"
+  options: {
+    [mediapipe.SplitVectorCalculatorOptions.ext] {
+      ranges: { begin: 0 end: 468 }
+    }
+  }
+}
+
+# Applies smoothing to the single set of face landmarks.
+node {
+  calculator: "FaceLandmarksSmoothing"
+  input_stream: "NORM_LANDMARKS:face_landmarks_without_iris"
+  input_stream: "IMAGE_SIZE:image_size"
+  output_stream: "NORM_FILTERED_LANDMARKS:smoothed_face_landmarks"
+}
+
+# Puts the single set of smoothed landmarks back into a collection to simplify
+# passing the result into the `FaceGeometryFromLandmarks` subgraph.
+node {
+  calculator: "ConcatenateNormalizedLandmarkListVectorCalculator"
+  input_stream: "smoothed_face_landmarks"
+  output_stream: "multi_smoothed_face_landmarks"
+}
+
+node {
+    calculator: "FaceGeometryFromLandmarks"
+    input_stream: "MULTI_FACE_LANDMARKS:multi_smoothed_face_landmarks"
+    input_stream: "IMAGE_SIZE:image_size"
+    input_side_packet: "ENVIRONMENT:environment"
+    output_stream: "MULTI_FACE_GEOMETRY:multi_face_geometry"
+}
