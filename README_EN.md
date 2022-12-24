@@ -2,6 +2,8 @@
 
 [简体中文](README.md)
 
+[C++ call MediaPipe(CPU)](https://github.com/liuyulvv/mediapipe/tree/cpu)
+
 [MediaPipe](https://github.com/google/mediapipe) uses TFLite for inference and has excellent performance on mobile devices.
 
 Although MediaPipe can achieve satisfactory performance using CPU in PC, it is not satisfactory in some Solutions (such as [Holistic](https://google.github.io/mediapipe/solutions/holistic.html)).
