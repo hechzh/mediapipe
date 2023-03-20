@@ -24,7 +24,8 @@ namespace mediapipe {
 
 absl::StatusOr<
     std::unique_ptr<AffineTransformation::Runner<ImageFrame, ImageFrame>>>
-CreateAffineTransformationOpenCvRunner();
+CreateAffineTransformationOpenCvRunner(
+    AffineTransformation::Interpolation interpolation);
 
 }  // namespace mediapipe
 

@@ -12,7 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "absl/strings/str_cat.h"
+#include <algorithm>
+#include <functional>
+#include <iterator>
+#include <map>
+#include <queue>
+#include <set>
+#include <string>
+#include <type_traits>
+#include <utility>
+
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/collection_item_id.h"
 #include "mediapipe/framework/input_stream_shard.h"
@@ -24,10 +33,6 @@
 #include "mediapipe/framework/port/status_macros.h"
 #include "mediapipe/framework/tool/container_util.h"
 #include "mediapipe/framework/tool/switch_container.pb.h"
-#include <algorithm>
-#include <memory>
-#include <set>
-#include <string>
 
 namespace mediapipe {
 
@@ -56,179 +61,209 @@ namespace mediapipe {
 // contained subgraph or calculator nodes.
 //
 class SwitchMuxCalculator : public CalculatorBase {
-    static constexpr char kSelectTag[] = "SELECT";
-    static constexpr char kEnableTag[] = "ENABLE";
+  static constexpr char kSelectTag[] = "SELECT";
+  static constexpr char kEnableTag[] = "ENABLE";
 
-public:
-    static absl::Status GetContract(CalculatorContract* cc);
+ public:
+  static absl::Status GetContract(CalculatorContract* cc);
 
-    absl::Status Open(CalculatorContext* cc) override;
-    absl::Status Process(CalculatorContext* cc) override;
+  absl::Status Open(CalculatorContext* cc) override;
+  absl::Status Process(CalculatorContext* cc) override;
 
-private:
-    int channel_index_;
-    std::set<std::string> channel_tags_;
-    mediapipe::SwitchContainerOptions options_;
-    // This is used to keep around packets that we've received but not
-    // relayed yet (because we may not know which channel we should yet be using
-    // when synchronized_io flag is set).
-    std::map<Timestamp, std::map<CollectionItemId, Packet>> packet_history_;
-    // Historical channel index values for timestamps where we don't have all
-    // packets available yet (when synchronized_io flag is set).
-    std::map<Timestamp, int> channel_history_;
-    // Number of output steams that we already processed for the current output
-    // timestamp.
-    int current_processed_stream_count_ = 0;
+ private:
+  // Stores any new input channel history.
+  void RecordChannel(CalculatorContext* cc);
+
+  // Temporarily enqueues every new packet or timestamp bounds.
+  void RecordPackets(CalculatorContext* cc);
+
+  // Immediately sends any packets or timestamp bounds for settled timestamps.
+  void SendActivePackets(CalculatorContext* cc);
+
+ private:
+  int channel_index_;
+  std::set<std::string> channel_tags_;
+  mediapipe::SwitchContainerOptions options_;
+  // This is used to keep around packets that we've received but not
+  // relayed yet (because we may not know which channel we should yet be using).
+  std::map<CollectionItemId, std::queue<Packet>> packet_queue_;
+  // Historical channel index values for timestamps where we don't have all
+  // packets available yet.
+  std::map<Timestamp, int> channel_history_;
 };
 REGISTER_CALCULATOR(SwitchMuxCalculator);
 
 absl::Status SwitchMuxCalculator::GetContract(CalculatorContract* cc) {
-    // Allow any one of kSelectTag, kEnableTag.
-    cc->Inputs().Tag(kSelectTag).Set<int>().Optional();
-    cc->Inputs().Tag(kEnableTag).Set<bool>().Optional();
-    // Allow any one of kSelectTag, kEnableTag.
-    cc->InputSidePackets().Tag(kSelectTag).Set<int>().Optional();
-    cc->InputSidePackets().Tag(kEnableTag).Set<bool>().Optional();
+  // Allow any one of kSelectTag, kEnableTag.
+  cc->Inputs().Tag(kSelectTag).Set<int>().Optional();
+  cc->Inputs().Tag(kEnableTag).Set<bool>().Optional();
+  // Allow any one of kSelectTag, kEnableTag.
+  cc->InputSidePackets().Tag(kSelectTag).Set<int>().Optional();
+  cc->InputSidePackets().Tag(kEnableTag).Set<bool>().Optional();
 
-    // Set the types for all input channels to corresponding output types.
-    std::set<std::string> channel_tags = ChannelTags(cc->Inputs().TagMap());
-    int channel_count = ChannelCount(cc->Inputs().TagMap());
-    for (const std::string& tag : channel_tags) {
-        for (int index = 0; index < cc->Outputs().NumEntries(tag); ++index) {
-            cc->Outputs().Get(tag, index).SetAny();
-            auto output_id = cc->Outputs().GetId(tag, index);
-            if (output_id.IsValid()) {
-                for (int channel = 0; channel < channel_count; ++channel) {
-                    auto input_id =
-                        cc->Inputs().GetId(tool::ChannelTag(tag, channel), index);
-                    if (input_id.IsValid()) {
-                        cc->Inputs().Get(input_id).SetSameAs(&cc->Outputs().Get(output_id));
-                    }
-                }
-            }
+  // Set the types for all input channels to corresponding output types.
+  std::set<std::string> channel_tags = ChannelTags(cc->Inputs().TagMap());
+  int channel_count = ChannelCount(cc->Inputs().TagMap());
+  for (const std::string& tag : channel_tags) {
+    for (int index = 0; index < cc->Outputs().NumEntries(tag); ++index) {
+      cc->Outputs().Get(tag, index).SetAny();
+      auto output_id = cc->Outputs().GetId(tag, index);
+      if (output_id.IsValid()) {
+        for (int channel = 0; channel < channel_count; ++channel) {
+          auto input_id =
+              cc->Inputs().GetId(tool::ChannelTag(tag, channel), index);
+          if (input_id.IsValid()) {
+            cc->Inputs().Get(input_id).SetSameAs(&cc->Outputs().Get(output_id));
+          }
         }
+      }
     }
-    channel_tags = ChannelTags(cc->InputSidePackets().TagMap());
-    channel_count = ChannelCount(cc->InputSidePackets().TagMap());
-    for (const std::string& tag : channel_tags) {
-        int num_entries = cc->OutputSidePackets().NumEntries(tag);
-        for (int index = 0; index < num_entries; ++index) {
-            cc->OutputSidePackets().Get(tag, index).SetAny();
-            auto output_id = cc->OutputSidePackets().GetId(tag, index);
-            if (output_id.IsValid()) {
-                for (int channel = 0; channel < channel_count; ++channel) {
-                    auto input_id = cc->InputSidePackets().GetId(
-                        tool::ChannelTag(tag, channel), index);
-                    if (input_id.IsValid()) {
-                        cc->InputSidePackets().Get(input_id).SetSameAs(
-                            &cc->OutputSidePackets().Get(output_id));
-                    }
-                }
-            }
+  }
+  channel_tags = ChannelTags(cc->InputSidePackets().TagMap());
+  channel_count = ChannelCount(cc->InputSidePackets().TagMap());
+  for (const std::string& tag : channel_tags) {
+    int num_entries = cc->OutputSidePackets().NumEntries(tag);
+    for (int index = 0; index < num_entries; ++index) {
+      cc->OutputSidePackets().Get(tag, index).SetAny();
+      auto output_id = cc->OutputSidePackets().GetId(tag, index);
+      if (output_id.IsValid()) {
+        for (int channel = 0; channel < channel_count; ++channel) {
+          auto input_id = cc->InputSidePackets().GetId(
+              tool::ChannelTag(tag, channel), index);
+          if (input_id.IsValid()) {
+            cc->InputSidePackets().Get(input_id).SetSameAs(
+                &cc->OutputSidePackets().Get(output_id));
+          }
         }
+      }
     }
-    cc->SetInputStreamHandler("ImmediateInputStreamHandler");
-    cc->SetProcessTimestampBounds(true);
-    return absl::OkStatus();
+  }
+  cc->SetInputStreamHandler("ImmediateInputStreamHandler");
+  cc->SetProcessTimestampBounds(true);
+  return absl::OkStatus();
+}
+
+// Returns the last delivered timestamp for an input stream.
+Timestamp SettledTimestamp(const InputStreamShard& input) {
+  return input.Value().Timestamp();
+}
+
+// Returns the last delivered timestamp for channel selection.
+Timestamp ChannelSettledTimestamp(CalculatorContext* cc) {
+  Timestamp result = Timestamp::Done();
+  if (cc->Inputs().HasTag("ENABLE")) {
+    result = SettledTimestamp(cc->Inputs().Tag("ENABLE"));
+  } else if (cc->Inputs().HasTag("SELECT")) {
+    result = SettledTimestamp(cc->Inputs().Tag("SELECT"));
+  }
+  return result;
 }
 
 absl::Status SwitchMuxCalculator::Open(CalculatorContext* cc) {
-    options_ = cc->Options<mediapipe::SwitchContainerOptions>();
-    channel_index_ = tool::GetChannelIndex(*cc, channel_index_);
-    channel_tags_ = ChannelTags(cc->Inputs().TagMap());
+  // Initialize channel_index_ and channel_history_.
+  options_ = cc->Options<mediapipe::SwitchContainerOptions>();
+  channel_index_ = tool::GetChannelIndex(*cc, channel_index_);
+  channel_tags_ = ChannelTags(cc->Inputs().TagMap());
+  channel_history_[Timestamp::Unstarted()] = channel_index_;
 
-    // Relay side packets only from channel_index_.
-    for (const std::string& tag : ChannelTags(cc->InputSidePackets().TagMap())) {
-        int num_outputs = cc->OutputSidePackets().NumEntries(tag);
-        for (int index = 0; index < num_outputs; ++index) {
-            std::string input_tag = tool::ChannelTag(tag, channel_index_);
-            Packet input = cc->InputSidePackets().Get(input_tag, index);
-            cc->OutputSidePackets().Get(tag, index).Set(input);
-        }
+  // Relay side packets only from channel_index_.
+  for (const std::string& tag : ChannelTags(cc->InputSidePackets().TagMap())) {
+    int num_outputs = cc->OutputSidePackets().NumEntries(tag);
+    for (int index = 0; index < num_outputs; ++index) {
+      std::string input_tag = tool::ChannelTag(tag, channel_index_);
+      Packet input = cc->InputSidePackets().Get(input_tag, index);
+      cc->OutputSidePackets().Get(tag, index).Set(input);
     }
-    return absl::OkStatus();
+  }
+  return absl::OkStatus();
+}
+
+void SwitchMuxCalculator::RecordChannel(CalculatorContext* cc) {
+  Timestamp channel_settled = ChannelSettledTimestamp(cc);
+  int new_channel_index = tool::GetChannelIndex(*cc, channel_index_);
+
+  // Enque any new input channel and its activation timestamp.
+  if (channel_settled == cc->InputTimestamp() &&
+      new_channel_index != channel_index_) {
+    channel_index_ = new_channel_index;
+    channel_history_[channel_settled] = channel_index_;
+  }
+}
+
+void SwitchMuxCalculator::RecordPackets(CalculatorContext* cc) {
+  auto select_id = cc->Inputs().GetId("SELECT", 0);
+  auto enable_id = cc->Inputs().GetId("ENABLE", 0);
+  for (auto id = cc->Inputs().BeginId(); id < cc->Inputs().EndId(); ++id) {
+    if (id == select_id || id == enable_id) continue;
+    Packet packet = cc->Inputs().Get(id).Value();
+    // Enque any new packet or timestamp bound.
+    if (packet.Timestamp() == cc->InputTimestamp()) {
+      packet_queue_[id].push(packet);
+    }
+  }
+}
+
+void SwitchMuxCalculator::SendActivePackets(CalculatorContext* cc) {
+  Timestamp expired_history;
+  // Iterate through the recent active input channels.
+  for (auto it = channel_history_.begin(); it != channel_history_.end(); ++it) {
+    int channel = it->second;
+    Timestamp channel_start = it->first;
+    Timestamp channel_end =
+        (std::next(it) == channel_history_.end())
+            ? ChannelSettledTimestamp(cc).NextAllowedInStream()
+            : std::next(it)->first;
+    Timestamp stream_settled = Timestamp::Done();
+    for (const std::string& tag : channel_tags_) {
+      std::string input_tag = tool::ChannelTag(tag, channel);
+      for (int index = 0; index < cc->Inputs().NumEntries(input_tag); ++index) {
+        CollectionItemId input_id = cc->Inputs().GetId(input_tag, index);
+        OutputStreamShard& output = cc->Outputs().Get(tag, index);
+        std::queue<Packet>& q = packet_queue_[input_id];
+        // Send any packets or bounds from a recent active input channel.
+        while (!q.empty() && q.front().Timestamp() < channel_end) {
+          if (q.front().Timestamp() >= channel_start) {
+            output.AddPacket(q.front());
+          }
+          q.pop();
+        }
+        stream_settled = std::min(stream_settled,
+                                  SettledTimestamp(cc->Inputs().Get(input_id)));
+      }
+    }
+
+    // A history entry is expired only if all streams have advanced past it.
+    if (stream_settled.NextAllowedInStream() < channel_end ||
+        std::next(it) == channel_history_.end()) {
+      break;
+    }
+    expired_history = channel_start;
+
+    // Discard any packets or bounds from recent inactive input channels.
+    for (auto id = cc->Inputs().BeginId(); id < cc->Inputs().EndId(); ++id) {
+      std::queue<Packet>& q = packet_queue_[id];
+      while (!q.empty() && q.front().Timestamp() < channel_end) {
+        q.pop();
+      }
+    }
+  }
+
+  // Discard any expired channel history entries.
+  if (expired_history != Timestamp::Unset()) {
+    channel_history_.erase(channel_history_.begin(),
+                           std::next(channel_history_.find(expired_history)));
+  }
 }
 
 absl::Status SwitchMuxCalculator::Process(CalculatorContext* cc) {
-    // Update the input channel index if specified.
-    channel_index_ = tool::GetChannelIndex(*cc, channel_index_);
-
-    if (options_.synchronize_io()) {
-        // Start with adding input signals into channel_history_ and packet_history_
-        if (cc->Inputs().HasTag("ENABLE") &&
-            !cc->Inputs().Tag("ENABLE").IsEmpty()) {
-            channel_history_[cc->Inputs().Tag("ENABLE").Value().Timestamp()] =
-                channel_index_;
-        }
-        if (cc->Inputs().HasTag("SELECT") &&
-            !cc->Inputs().Tag("SELECT").IsEmpty()) {
-            channel_history_[cc->Inputs().Tag("SELECT").Value().Timestamp()] =
-                channel_index_;
-        }
-        for (auto input_id = cc->Inputs().BeginId();
-             input_id < cc->Inputs().EndId(); ++input_id) {
-            auto& entry = cc->Inputs().Get(input_id);
-            if (entry.IsEmpty()) {
-                continue;
-            }
-            packet_history_[entry.Value().Timestamp()][input_id] = entry.Value();
-        }
-        // Now check if we have enough information to produce any outputs.
-        while (!channel_history_.empty()) {
-            // Look at the oldest unprocessed timestamp.
-            auto it = channel_history_.begin();
-            auto& packets = packet_history_[it->first];
-            int total_streams = 0;
-            // Loop over all outputs to see if we have anything new that we can relay.
-            for (const std::string& tag : channel_tags_) {
-                for (int index = 0; index < cc->Outputs().NumEntries(tag); ++index) {
-                    ++total_streams;
-                    auto input_id =
-                        cc->Inputs().GetId(tool::ChannelTag(tag, it->second), index);
-                    auto packet_it = packets.find(input_id);
-                    if (packet_it != packets.end()) {
-                        cc->Outputs().Get(tag, index).AddPacket(packet_it->second);
-                        ++current_processed_stream_count_;
-                    } else if (it->first <
-                               cc->Inputs().Get(input_id).Value().Timestamp()) {
-                        // Getting here means that input stream that corresponds to this
-                        // output at the timestamp we're trying to process right now has
-                        // already advanced beyond this timestamp. This means that we will
-                        // shouldn't expect a packet for this timestamp anymore, and we can
-                        // safely advance timestamp on the output.
-                        cc->Outputs()
-                            .Get(tag, index)
-                            .SetNextTimestampBound(it->first.NextAllowedInStream());
-                        ++current_processed_stream_count_;
-                    }
-                }
-            }
-            if (current_processed_stream_count_ == total_streams) {
-                // There's nothing else to wait for at the current timestamp, do the
-                // cleanup and move on to the next one.
-                packet_history_.erase(it->first);
-                channel_history_.erase(it);
-                current_processed_stream_count_ = 0;
-            } else {
-                // We're still missing some packets for the current timestamp. Clean up
-                // those that we just relayed and let the rest wait until the next
-                // Process() call.
-                packets.clear();
-                break;
-            }
-        }
-    } else {
-        // Relay packets and timestamps only from channel_index_.
-        for (const std::string& tag : channel_tags_) {
-            for (int index = 0; index < cc->Outputs().NumEntries(tag); ++index) {
-                auto& output = cc->Outputs().Get(tag, index);
-                std::string input_tag = tool::ChannelTag(tag, channel_index_);
-                auto& input = cc->Inputs().Get(input_tag, index);
-                tool::Relay(input, &output);
-            }
-        }
-    }
-    return absl::OkStatus();
+  // Normally packets will arrive on the active channel and will be passed
+  // through immediately.  In the less common case in which the active input
+  // channel is not known for an input packet timestamp, the input packet is
+  // queued until the active channel becomes known.
+  RecordChannel(cc);
+  RecordPackets(cc);
+  SendActivePackets(cc);
+  return absl::OkStatus();
 }
 
 }  // namespace mediapipe

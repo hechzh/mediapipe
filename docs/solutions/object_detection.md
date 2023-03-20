@@ -18,7 +18,17 @@ nav_order: 9
 </details>
 ---
 
-![object_detection_android_gpu.gif](../images/mobile/object_detection_android_gpu.gif)
+**Attention:** *Thank you for your interest in MediaPipe Solutions.
+As of March 1, 2023, this solution is planned to be upgraded to a new MediaPipe
+Solution. For more information, see the new
+[MediaPipe Solutions](https://developers.google.com/mediapipe/solutions/guide#legacy)
+site.*
+
+*This notice and web page will be removed on April 3, 2023.*
+
+----
+
+![object_detection_android_gpu.gif](https://mediapipe.dev/images/mobile/object_detection_android_gpu.gif)
 
 ## Example Apps
 
@@ -75,7 +85,7 @@ on how to build MediaPipe examples.
 *   With a TFLite Model
 
     This uses the same
-    [TFLite model](https://github.com/google/mediapipe/tree/master/mediapipe/models/ssdlite_object_detection.tflite)
+    [TFLite model](https://storage.googleapis.com/mediapipe-assets/ssdlite_object_detection.tflite)
     (see also
     [model info](https://github.com/google/mediapipe/tree/master/mediapipe/models/object_detection_saved_model/README.md))
     as in [Live Camera Input](#live-camera-input) above. The pipeline is
@@ -108,9 +118,9 @@ on how to build MediaPipe examples.
 *   With a TensorFlow Model
 
     This uses the
-    [TensorFlow model](https://github.com/google/mediapipe/tree/master/mediapipe/models/object_detection_saved_model)
+    [TensorFlow model](https://github.com/google/mediapipe/tree/v0.8.10/mediapipe/models/object_detection_saved_model)
     ( see also
-    [model info](https://github.com/google/mediapipe/tree/master/mediapipe/models/object_detection_saved_model/README.md)),
+    [model info](https://github.com/google/mediapipe/tree/master/mediapipe/g3doc/solutions/object_detection_saved_model.md)),
     and the pipeline is implemented in this
     [graph](https://github.com/google/mediapipe/tree/master/mediapipe/graphs/object_detection/object_detection_mobile_cpu.pbtxt).
 

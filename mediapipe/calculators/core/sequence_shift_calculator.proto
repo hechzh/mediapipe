@@ -18,11 +18,13 @@ package mediapipe;
 
 import "mediapipe/framework/calculator.proto";
 
-option objc_class_prefix = "MediaPipe";
-
 message SequenceShiftCalculatorOptions {
-    extend CalculatorOptions {
-        optional SequenceShiftCalculatorOptions ext = 107633927;
-    }
-    optional int32 packet_offset = 1 [default = -1];
+  extend CalculatorOptions {
+    optional SequenceShiftCalculatorOptions ext = 107633927;
+  }
+  optional int32 packet_offset = 1 [default = -1];
+
+  // Emits empty packets before the first delayed packet is emitted. Takes
+  // effect only when packet offset is set to positive.
+  optional bool emit_empty_packets_before_first_packet = 2 [default = false];
 }

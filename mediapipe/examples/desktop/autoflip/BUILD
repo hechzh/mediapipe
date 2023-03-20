@@ -16,13 +16,28 @@ load("//mediapipe/framework/port:build_config.bzl", "mediapipe_cc_proto_library"
 
 licenses(["notice"])
 
-package(default_visibility = ["//mediapipe/examples:__subpackages__"])
+package(default_visibility = [
+    "//mediapipe/examples:__subpackages__",
+    "//photos/editing/mobile/mediapipe/calculators:__subpackages__",
+    "//photos/editing/mobile/mediapipe/proto:__subpackages__",
+])
 
 proto_library(
     name = "autoflip_messages_proto",
     srcs = ["autoflip_messages.proto"],
     deps = [
-        "//mediapipe/framework:calculator_proto",
+        "//mediapipe/framework:calculator_options_proto",
+    ],
+)
+
+java_lite_proto_library(
+    name = "autoflip_messages_java_proto_lite",
+    visibility = [
+        "//java/com/google/android/apps/photos:__subpackages__",
+        "//javatests/com/google/android/apps/photos:__subpackages__",
+    ],
+    deps = [
+        ":autoflip_messages_proto",
     ],
 )
 
@@ -32,12 +47,17 @@ mediapipe_cc_proto_library(
     cc_deps = ["//mediapipe/framework:calculator_cc_proto"],
     visibility = [
         "//mediapipe/examples:__subpackages__",
+        "//photos/editing/mobile/mediapipe/calculators:__pkg__",
+        "//photos/editing/mobile/mediapipe/calculators:__subpackages__",
     ],
     deps = [":autoflip_messages_proto"],
 )
 
 cc_binary(
     name = "run_autoflip",
+    data = [
+        "//mediapipe/modules/face_detection:face_detection_full_range_sparse.tflite",
+    ],
     deps = [
         "//mediapipe/calculators/core:packet_thinner_calculator",
         "//mediapipe/calculators/image:scale_image_calculator",

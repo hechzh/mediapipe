@@ -17,68 +17,87 @@
 #ifndef MEDIAPIPE_UTIL_PACKET_TEST_UTIL_H_
 #define MEDIAPIPE_UTIL_PACKET_TEST_UTIL_H_
 
+#include <ostream>
+#include <string>
+#include <typeinfo>
+
 #include "mediapipe/framework/demangle.h"
 #include "mediapipe/framework/packet.h"
 #include "mediapipe/framework/port/gmock.h"
 #include "mediapipe/framework/port/gtest.h"
 #include "mediapipe/framework/timestamp.h"
-#include <ostream>
-#include <string>
-#include <typeinfo>
 
 namespace mediapipe {
 
 namespace internal {
 
 template <typename PayloadType>
-class PacketMatcher : public ::testing::MatcherInterface<const Packet&> {
-public:
-    template <typename InnerMatcher>
-    explicit PacketMatcher(InnerMatcher inner_matcher)
-        : inner_matcher_(
-              ::testing::SafeMatcherCast<const PayloadType&>(inner_matcher)) {}
+class PacketMatcher : public testing::MatcherInterface<const Packet&> {
+ public:
+  template <typename InnerMatcher>
+  explicit PacketMatcher(InnerMatcher inner_matcher)
+      : inner_matcher_(
+            testing::SafeMatcherCast<const PayloadType&>(inner_matcher)) {}
 
-    // Returns true iff the packet contains value of PayloadType satisfying
-    // the inner matcher.
-    bool MatchAndExplain(
-        const Packet& packet,
-        ::testing::MatchResultListener* listener) const override {
-        if (!packet.ValidateAsType<PayloadType>().ok()) {
-            *listener << packet.DebugString() << " does not contain expected type "
-                      << ExpectedTypeName();
-            return false;
-        }
-        ::testing::StringMatchResultListener match_listener;
-        const PayloadType& payload = packet.Get<PayloadType>();
-        const bool matches =
-            inner_matcher_.MatchAndExplain(payload, &match_listener);
-        const std::string explanation = match_listener.str();
-        *listener << packet.DebugString() << " containing value "
-                  << ::testing::PrintToString(payload);
-        if (!explanation.empty()) {
-            *listener << ", which " << explanation;
-        }
-        return matches;
+  // Returns true iff the packet contains value of PayloadType satisfying
+  // the inner matcher.
+  bool MatchAndExplain(const Packet& packet,
+                       testing::MatchResultListener* listener) const override {
+    if (!packet.ValidateAsType<PayloadType>().ok()) {
+      *listener << packet.DebugString() << " does not contain expected type "
+                << ExpectedTypeName();
+      return false;
     }
-
-    void DescribeTo(std::ostream* os) const override {
-        *os << "packet contains value of type " << ExpectedTypeName() << " that ";
-        inner_matcher_.DescribeTo(os);
+    testing::StringMatchResultListener match_listener;
+    const PayloadType& payload = packet.Get<PayloadType>();
+    const bool matches =
+        inner_matcher_.MatchAndExplain(payload, &match_listener);
+    const std::string explanation = match_listener.str();
+    *listener << packet.DebugString() << " containing value "
+              << testing::PrintToString(payload);
+    if (!explanation.empty()) {
+      *listener << ", which " << explanation;
     }
+    return matches;
+  }
 
-    void DescribeNegationTo(std::ostream* os) const override {
-        *os << "packet does not contain value of type " << ExpectedTypeName()
-            << " that ";
-        inner_matcher_.DescribeNegationTo(os);
-    }
+  void DescribeTo(std::ostream* os) const override {
+    *os << "packet contains value of type " << ExpectedTypeName() << " that ";
+    inner_matcher_.DescribeTo(os);
+  }
 
-private:
-    static std::string ExpectedTypeName() {
-        return ::mediapipe::Demangle(typeid(PayloadType).name());
-    }
+  void DescribeNegationTo(std::ostream* os) const override {
+    *os << "packet does not contain value of type " << ExpectedTypeName()
+        << " that ";
+    inner_matcher_.DescribeNegationTo(os);
+  }
 
-    const ::testing::Matcher<const PayloadType&> inner_matcher_;
+ private:
+  static std::string ExpectedTypeName() {
+    return ::mediapipe::Demangle(typeid(PayloadType).name());
+  }
+
+  const testing::Matcher<const PayloadType&> inner_matcher_;
 };
+
+inline std::string SourceString(Timestamp t) {
+  return (t.IsSpecialValue())
+             ? t.DebugString()
+             : absl::StrCat("Timestamp(", t.DebugString(), ")");
+}
+
+template <typename T>
+std::string SourceString(Packet packet) {
+  std::ostringstream oss;
+  if (packet.IsEmpty()) {
+    oss << "Packet()";
+  } else {
+    oss << "MakePacket<" << MediaPipeTypeStringOrDemangled<T>() << ">("
+        << packet.Get<T>() << ")";
+  }
+  oss << ".At(" << SourceString(packet.Timestamp()) << ")";
+  return oss.str();
+}
 
 }  // namespace internal
 
@@ -90,10 +109,10 @@ private:
 //
 // EXPECT_THAT(MakePacket<int>(42), PacketContains<int>(Eq(42)))
 template <typename PayloadType, typename InnerMatcher>
-inline ::testing::Matcher<const Packet&> PacketContains(
+inline testing::Matcher<const Packet&> PacketContains(
     InnerMatcher inner_matcher) {
-    return ::testing::MakeMatcher(
-        new internal::PacketMatcher<PayloadType>(inner_matcher));
+  return testing::MakeMatcher(
+      new internal::PacketMatcher<PayloadType>(inner_matcher));
 }
 
 // Creates matcher validating the packet's timestamp satisfies the provided
@@ -109,14 +128,54 @@ inline ::testing::Matcher<const Packet&> PacketContains(
 //                Eq(42)))
 template <typename PayloadType, typename TimestampMatcher,
           typename ContentMatcher>
-inline ::testing::Matcher<const Packet&> PacketContainsTimestampAndPayload(
+inline testing::Matcher<const Packet&> PacketContainsTimestampAndPayload(
     TimestampMatcher timestamp_matcher, ContentMatcher content_matcher) {
-    return testing::AllOf(
-        testing::Property("Packet::Timestamp", &Packet::Timestamp,
-                          timestamp_matcher),
-        PacketContains<PayloadType>(content_matcher));
+  return testing::AllOf(
+      testing::Property("Packet::Timestamp", &Packet::Timestamp,
+                        timestamp_matcher),
+      PacketContains<PayloadType>(content_matcher));
 }
 
+template <typename T>
+class PacketEqMatcher : public testing::MatcherInterface<Packet> {
+ public:
+  PacketEqMatcher(Packet packet) : packet_(packet) {}
+  void DescribeTo(::std::ostream* os) const override {
+    *os << "The expected packet: " << internal::SourceString<T>(packet_);
+  }
+  bool MatchAndExplain(Packet value,
+                       testing::MatchResultListener* listener) const override {
+    bool unequal = (value.Timestamp() != packet_.Timestamp() ||
+                    value.IsEmpty() != packet_.IsEmpty() ||
+                    (!value.IsEmpty() && value.Get<T>() != packet_.Get<T>()));
+    if (unequal && listener->IsInterested()) {
+      *listener << "The actual packet: " << internal::SourceString<T>(value);
+    }
+    return !unequal;
+  }
+  const Packet packet_;
+};
+
+template <typename T>
+testing::Matcher<Packet> PacketEq(Packet packet) {
+  return MakeMatcher(new PacketEqMatcher<T>(packet));
+}
+
+template <typename T>
+std::vector<testing::Matcher<Packet>> PacketMatchers(
+    std::vector<Packet> packets) {
+  std::vector<testing::Matcher<Packet>> result;
+  for (const auto& packet : packets) {
+    result.push_back(PacketEq<T>(packet));
+  }
+  return result;
+}
+
+}  // namespace mediapipe
+
+namespace mediapipe {
+using mediapipe::PacketContains;
+using mediapipe::PacketContainsTimestampAndPayload;
 }  // namespace mediapipe
 
 #endif  // MEDIAPIPE_UTIL_PACKET_TEST_UTIL_H_

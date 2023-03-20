@@ -15,7 +15,13 @@
 #ifndef MEDIAPIPE_CALCULATORS_TFLITE_TFLITE_GPU_RUNNER_H_
 #define MEDIAPIPE_CALCULATORS_TFLITE_TFLITE_GPU_RUNNER_H_
 
+#include <cstdint>
+#include <memory>
+#include <vector>
+
 #include "absl/status/status.h"
+#include "mediapipe/framework/port.h"
+#include "mediapipe/framework/port/ret_check.h"
 #include "mediapipe/framework/port/status.h"
 #include "mediapipe/framework/port/statusor.h"
 #include "tensorflow/lite/core/api/op_resolver.h"
@@ -23,13 +29,10 @@
 #include "tensorflow/lite/delegates/gpu/common/model.h"
 #include "tensorflow/lite/delegates/gpu/gl/api2.h"
 #include "tensorflow/lite/model.h"
-#include <cstdint>
-#include <memory>
-#include <vector>
 
-#ifdef __ANDROID__
+#if defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
 #include "tensorflow/lite/delegates/gpu/cl/api.h"
-#endif  // __ANDROID__
+#endif  // defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
 
 namespace tflite {
 namespace gpu {
@@ -49,94 +52,95 @@ namespace gpu {
 // sure that all steps from inference construction to execution are made using
 // same OpenGL context.
 class TFLiteGPURunner {
-public:
-    explicit TFLiteGPURunner(const InferenceOptions& options)
-        : options_(options) {}
+ public:
+  explicit TFLiteGPURunner(const InferenceOptions& options)
+      : options_(options) {}
 
-    absl::Status InitializeWithModel(const tflite::FlatBufferModel& flatbuffer,
-                                     const tflite::OpResolver& op_resolver,
-                                     bool allow_quant_ops = false);
+  absl::Status InitializeWithModel(const tflite::FlatBufferModel& flatbuffer,
+                                   const tflite::OpResolver& op_resolver,
+                                   bool allow_quant_ops = false);
 
-    void ForceOpenGL() { opengl_is_forced_ = true; }
-    void ForceOpenCL() { opencl_is_forced_ = true; }
+  void ForceOpenGL() { opengl_is_forced_ = true; }
+  void ForceOpenCL() { opencl_is_forced_ = true; }
 
-    absl::Status BindSSBOToInputTensor(GLuint ssbo_id, int input_id);
-    absl::Status BindSSBOToOutputTensor(GLuint ssbo_id, int output_id);
+  absl::Status BindSSBOToInputTensor(GLuint ssbo_id, int input_id);
+  absl::Status BindSSBOToOutputTensor(GLuint ssbo_id, int output_id);
 
-    int inputs_size() const { return input_shapes_.size(); }
-    int outputs_size() const { return output_shapes_.size(); }
+  int inputs_size() const { return input_shapes_.size(); }
+  int outputs_size() const { return output_shapes_.size(); }
 
-    absl::StatusOr<int64_t> GetInputElements(int id);
-    absl::StatusOr<int64_t> GetOutputElements(int id);
+  absl::StatusOr<int64_t> GetInputElements(int id);
+  absl::StatusOr<int64_t> GetOutputElements(int id);
 
-    absl::Status Build();
-    absl::Status Invoke();
+  absl::Status Build();
+  absl::Status Invoke();
 
-    std::vector<BHWC> GetInputShapes() { return input_shapes_; }
-    std::vector<BHWC> GetOutputShapes() { return output_shapes_; }
+  std::vector<BHWC> GetInputShapes() { return input_shapes_; }
+  std::vector<BHWC> GetOutputShapes() { return output_shapes_; }
 
-    std::vector<std::vector<int>> GetTFLiteInputShapes() {
-        return input_shape_from_model_;
-    }
-    std::vector<std::vector<int>> GetTFLiteOutputShapes() {
-        return output_shape_from_model_;
-    }
+  std::vector<std::vector<int>> GetTFLiteInputShapes() {
+    return input_shape_from_model_;
+  }
+  std::vector<std::vector<int>> GetTFLiteOutputShapes() {
+    return output_shape_from_model_;
+  }
 
-#ifdef __ANDROID__
-    void SetSerializedBinaryCache(std::vector<uint8_t>&& cache) {
-        serialized_binary_cache_ = std::move(cache);
-    }
+#if defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
+  void SetSerializedBinaryCache(std::vector<uint8_t>&& cache) {
+    serialized_binary_cache_ = std::move(cache);
+  }
 
-    std::vector<uint8_t> GetSerializedBinaryCache() {
-        return cl_environment_->GetSerializedBinaryCache();
-    }
+  absl::StatusOr<std::vector<uint8_t>> GetSerializedBinaryCache() {
+    RET_CHECK(cl_environment_) << "CL environment is not initialized.";
+    return cl_environment_->GetSerializedBinaryCache();
+  }
 
-    void SetSerializedModel(std::vector<uint8_t>&& serialized_model) {
-        serialized_model_ = std::move(serialized_model);
-        serialized_model_used_ = false;
-    }
+  void SetSerializedModel(std::vector<uint8_t>&& serialized_model) {
+    serialized_model_ = std::move(serialized_model);
+    serialized_model_used_ = false;
+  }
 
-    absl::StatusOr<std::vector<uint8_t>> GetSerializedModel();
-#endif  // __ANDROID__
+  absl::StatusOr<std::vector<uint8_t>> GetSerializedModel();
+#endif  // defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
 
-private:
-    absl::Status InitializeOpenGL(std::unique_ptr<InferenceBuilder>* builder);
-    absl::Status InitializeOpenCL(std::unique_ptr<InferenceBuilder>* builder);
-#ifdef __ANDROID__
-    absl::Status InitializeOpenCLFromSerializedModel(
-        std::unique_ptr<InferenceBuilder>* builder);
-#endif  // __ANDROID__
+ private:
+  absl::Status InitializeOpenGL(std::unique_ptr<InferenceBuilder>* builder);
+  absl::Status InitializeOpenCL(std::unique_ptr<InferenceBuilder>* builder);
+#if defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
+  absl::Status InitializeOpenCLFromSerializedModel(
+      std::unique_ptr<InferenceBuilder>* builder);
+#endif  // defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
 
-    InferenceOptions options_;
-    std::unique_ptr<gl::InferenceEnvironment> gl_environment_;
+  InferenceOptions options_;
+  std::unique_ptr<gl::InferenceEnvironment> gl_environment_;
 
-#ifdef __ANDROID__
-    std::unique_ptr<cl::InferenceEnvironment> cl_environment_;
+#if defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
+  std::unique_ptr<cl::InferenceEnvironment> cl_environment_;
 
-    std::vector<uint8_t> serialized_binary_cache_;
-    std::vector<uint8_t> serialized_model_;
-    bool serialized_model_used_ = false;
-#endif  // __ANDROID__
+  std::vector<uint8_t> serialized_binary_cache_;
+  std::vector<uint8_t> serialized_model_;
+  bool serialized_model_used_ = false;
+#endif  // defined(__ANDROID__) || defined(MEDIAPIPE_CHROMIUMOS)
 
-    // graph_gl_ is maintained temporarily and becomes invalid after runner_ is
-    // ready
-    std::unique_ptr<GraphFloat32> graph_gl_;
-    std::unique_ptr<GraphFloat32> graph_cl_;
-    std::unique_ptr<InferenceRunner> runner_;
+  // graph_gl_ is maintained temporarily and becomes invalid after runner_ is
+  // ready
+  std::unique_ptr<GraphFloat32> graph_gl_;
+  std::unique_ptr<GraphFloat32> graph_cl_;
+  std::unique_ptr<InferenceRunner> runner_;
 
-    // We keep information about input/output shapes, because they are needed
-    // after graph_ becomes "converted" into runner_.
-    std::vector<BHWC> input_shapes_;
-    std::vector<BHWC> output_shapes_;
+  // We keep information about input/output shapes, because they are needed
+  // after graph_ becomes "converted" into runner_.
+  std::vector<BHWC> input_shapes_;
+  std::vector<BHWC> output_shapes_;
 
-    // Input/output shapes above belong to the internal graph representation. It
-    // is handy in certain situations to have the original tflite model's
-    // input/output shapes, which differ conceptually.
-    std::vector<std::vector<int>> input_shape_from_model_;
-    std::vector<std::vector<int>> output_shape_from_model_;
+  // Input/output shapes above belong to the internal graph representation. It
+  // is handy in certain situations to have the original tflite model's
+  // input/output shapes, which differ conceptually.
+  std::vector<std::vector<int>> input_shape_from_model_;
+  std::vector<std::vector<int>> output_shape_from_model_;
 
-    bool opencl_is_forced_ = false;
-    bool opengl_is_forced_ = false;
+  bool opencl_is_forced_ = false;
+  bool opengl_is_forced_ = false;
 };
 
 }  // namespace gpu

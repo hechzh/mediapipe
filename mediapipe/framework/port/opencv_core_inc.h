@@ -20,8 +20,11 @@
 #ifdef CV_VERSION_EPOCH  // for OpenCV 2.x
 #include <opencv2/core/core.hpp>
 #else
-#include <opencv2/core.hpp>
+#if CV_VERSION_MAJOR == 3
 #include <opencv2/cvconfig.h>
+#endif
+
+#include <opencv2/core.hpp>
 #endif
 
 #endif  // MEDIAPIPE_PORT_OPENCV_CORE_INC_H_

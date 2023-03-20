@@ -13,189 +13,195 @@
 // limitations under the License.
 
 #include "mediapipe/gpu/shader_util.h"
-#include "mediapipe/framework/port/logging.h"
+
 #include <stdlib.h>
 
+#include "mediapipe/framework/port/logging.h"
+
 #if DEBUG
-#define GL_DEBUG_LOG(type, object, action)                              \
-    do {                                                                \
-        GLint log_length = 0;                                           \
-        glGet##type##iv(object, GL_INFO_LOG_LENGTH, &log_length);       \
-        if (log_length > 0) {                                           \
-            GLchar* log = static_cast<GLchar*>(malloc(log_length));     \
-            glGet##type##InfoLog(object, log_length, &log_length, log); \
-            LOG(INFO) << #type " " action " log:\n"                     \
-                      << log;                                           \
-            free(log);                                                  \
-        }                                                               \
-    } while (0)
+#define GL_DEBUG_LOG(type, object, action)                        \
+  do {                                                            \
+    GLint log_length = 0;                                         \
+    glGet##type##iv(object, GL_INFO_LOG_LENGTH, &log_length);     \
+    if (log_length > 0) {                                         \
+      GLchar* log = static_cast<GLchar*>(malloc(log_length));     \
+      glGet##type##InfoLog(object, log_length, &log_length, log); \
+      LOG(INFO) << #type " " action " log:\n" << log;             \
+      free(log);                                                  \
+    }                                                             \
+  } while (0)
 #else
 #define GL_DEBUG_LOG(type, object, action)
 #endif
 
-#define GL_ERROR_LOG(type, object, action)                              \
-    do {                                                                \
-        GLint log_length = 0;                                           \
-        glGet##type##iv(object, GL_INFO_LOG_LENGTH, &log_length);       \
-        if (log_length > 0) {                                           \
-            GLchar* log = static_cast<GLchar*>(malloc(log_length));     \
-            glGet##type##InfoLog(object, log_length, &log_length, log); \
-            LOG(ERROR) << #type " " action " log:\n"                    \
-                       << log;                                          \
-            free(log);                                                  \
-        }                                                               \
-    } while (0)
+#define GL_ERROR_LOG(type, object, action)                        \
+  do {                                                            \
+    GLint log_length = 0;                                         \
+    glGet##type##iv(object, GL_INFO_LOG_LENGTH, &log_length);     \
+    if (log_length > 0) {                                         \
+      GLchar* log = static_cast<GLchar*>(malloc(log_length));     \
+      glGet##type##InfoLog(object, log_length, &log_length, log); \
+      LOG(ERROR) << #type " " action " log:\n" << log;            \
+      free(log);                                                  \
+    }                                                             \
+  } while (0)
 
 namespace mediapipe {
 
 constexpr int kMaxShaderInfoLength = 1024;
 
-GLint GlhCompileShader(GLenum target, const GLchar* source, GLuint* shader) {
-    *shader = glCreateShader(target);
-    if (*shader == 0) {
-        return GL_FALSE;
-    }
-    glShaderSource(*shader, 1, &source, NULL);
-    glCompileShader(*shader);
+GLint GlhCompileShader(GLenum target, const GLchar* source, GLuint* shader,
+                       bool force_log_errors) {
+  *shader = glCreateShader(target);
+  if (*shader == 0) {
+    return GL_FALSE;
+  }
+  glShaderSource(*shader, 1, &source, NULL);
+  glCompileShader(*shader);
 
-    GL_DEBUG_LOG(Shader, *shader, "compile");
+  GL_DEBUG_LOG(Shader, *shader, "compile");
 
 #if UNSAFE_EMSCRIPTEN_SKIP_GL_ERROR_HANDLING
+  if (!force_log_errors) {
     return GL_TRUE;
-#else
-    GLint status;
-
-    glGetShaderiv(*shader, GL_COMPILE_STATUS, &status);
-    LOG_IF(ERROR, status == GL_FALSE) << "Failed to compile shader:\n"
-                                      << source;
-
-    if (status == GL_FALSE) {
-        int length = 0;
-        GLchar cmessage[kMaxShaderInfoLength];
-        glGetShaderInfoLog(*shader, kMaxShaderInfoLength, &length, cmessage);
-        LOG(ERROR) << "Error message: " << std::string(cmessage, length);
-    }
-    return status;
+  }
 #endif  // UNSAFE_EMSCRIPTEN_SKIP_GL_ERROR_HANDLING
+
+  GLint status;
+
+  glGetShaderiv(*shader, GL_COMPILE_STATUS, &status);
+  LOG_IF(ERROR, status == GL_FALSE) << "Failed to compile shader:\n" << source;
+
+  if (status == GL_FALSE) {
+    int length = 0;
+    GLchar cmessage[kMaxShaderInfoLength];
+    glGetShaderInfoLog(*shader, kMaxShaderInfoLength, &length, cmessage);
+    LOG(ERROR) << "Error message: " << std::string(cmessage, length);
+  }
+  return status;
 }
 
-GLint GlhLinkProgram(GLuint program) {
-    glLinkProgram(program);
+GLint GlhLinkProgram(GLuint program, bool force_log_errors) {
+  glLinkProgram(program);
 
 #if UNSAFE_EMSCRIPTEN_SKIP_GL_ERROR_HANDLING
+  if (!force_log_errors) {
     return GL_TRUE;
-#else
-    GLint status;
-
-    GL_DEBUG_LOG(Program, program, "link");
-
-    glGetProgramiv(program, GL_LINK_STATUS, &status);
-    LOG_IF(ERROR, status == GL_FALSE) << "Failed to link program " << program;
-
-    return status;
+  }
 #endif  // UNSAFE_EMSCRIPTEN_SKIP_GL_ERROR_HANDLING
+
+  GLint status;
+
+  GL_DEBUG_LOG(Program, program, "link");
+
+  glGetProgramiv(program, GL_LINK_STATUS, &status);
+  LOG_IF(ERROR, status == GL_FALSE) << "Failed to link program " << program;
+
+  return status;
 }
 
 GLint GlhValidateProgram(GLuint program) {
-    GLint status;
+  GLint status;
 
-    glValidateProgram(program);
+  glValidateProgram(program);
 
-    GL_DEBUG_LOG(Program, program, "validate");
+  GL_DEBUG_LOG(Program, program, "validate");
 
-    glGetProgramiv(program, GL_VALIDATE_STATUS, &status);
-    LOG_IF(ERROR, status == GL_FALSE) << "Failed to validate program " << program;
+  glGetProgramiv(program, GL_VALIDATE_STATUS, &status);
+  LOG_IF(ERROR, status == GL_FALSE) << "Failed to validate program " << program;
 
-    return status;
+  return status;
 }
 
 GLint GlhCreateProgram(const GLchar* vert_src, const GLchar* frag_src,
                        GLsizei attr_count, const GLchar* const* attr_names,
-                       const GLint* attr_locations, GLuint* program) {
-    GLuint vert_shader = 0;
-    GLuint frag_shader = 0;
-    GLint ok = GL_TRUE;
+                       const GLint* attr_locations, GLuint* program,
+                       bool force_log_errors) {
+  GLuint vert_shader = 0;
+  GLuint frag_shader = 0;
+  GLint ok = GL_TRUE;
 
-    *program = glCreateProgram();
-    if (*program == 0) {
-        return GL_FALSE;
+  *program = glCreateProgram();
+  if (*program == 0) {
+    return GL_FALSE;
+  }
+
+  ok = ok && GlhCompileShader(GL_VERTEX_SHADER, vert_src, &vert_shader,
+                              force_log_errors);
+  ok = ok && GlhCompileShader(GL_FRAGMENT_SHADER, frag_src, &frag_shader,
+                              force_log_errors);
+
+  if (ok) {
+    glAttachShader(*program, vert_shader);
+    glAttachShader(*program, frag_shader);
+
+    // Attribute location binding must be set before linking.
+    for (int i = 0; i < attr_count; i++) {
+      glBindAttribLocation(*program, attr_locations[i], attr_names[i]);
     }
 
-    ok = ok && GlhCompileShader(GL_VERTEX_SHADER, vert_src, &vert_shader);
-    ok = ok && GlhCompileShader(GL_FRAGMENT_SHADER, frag_src, &frag_shader);
+    ok = GlhLinkProgram(*program, force_log_errors);
+  }
 
-    if (ok) {
-        glAttachShader(*program, vert_shader);
-        glAttachShader(*program, frag_shader);
+  if (vert_shader) glDeleteShader(vert_shader);
+  if (frag_shader) glDeleteShader(frag_shader);
 
-        // Attribute location binding must be set before linking.
-        for (int i = 0; i < attr_count; i++) {
-            glBindAttribLocation(*program, attr_locations[i], attr_names[i]);
-        }
+  if (!ok) {
+    glDeleteProgram(*program);
+    *program = 0;
+  }
 
-        ok = GlhLinkProgram(*program);
-    }
-
-    if (vert_shader) glDeleteShader(vert_shader);
-    if (frag_shader) glDeleteShader(frag_shader);
-
-    if (!ok) {
-        glDeleteProgram(*program);
-        *program = 0;
-    }
-
-    return ok;
+  return ok;
 }
 
 bool CompileShader(GLenum shader_type, const std::string& shader_source,
                    GLuint* shader) {
-    *shader = glCreateShader(shader_type);
-    if (*shader == 0) {
-        VLOG(2) << "Unable to create shader of type: " << shader_type;
-        return false;
-    }
-    const char* shader_source_cstr = shader_source.c_str();
-    glShaderSource(*shader, 1, &shader_source_cstr, NULL);
-    glCompileShader(*shader);
+  *shader = glCreateShader(shader_type);
+  if (*shader == 0) {
+    VLOG(2) << "Unable to create shader of type: " << shader_type;
+    return false;
+  }
+  const char* shader_source_cstr = shader_source.c_str();
+  glShaderSource(*shader, 1, &shader_source_cstr, NULL);
+  glCompileShader(*shader);
 
-    GLint compiled;
-    glGetShaderiv(*shader, GL_COMPILE_STATUS, &compiled);
-    if (!compiled) {
-        VLOG(2) << "Unable to compile shader:\n"
-                << shader_source;
-        GL_ERROR_LOG(Shader, *shader, "compile");
-        glDeleteShader(*shader);
-        *shader = 0;
-        return false;
-    }
-    return true;
+  GLint compiled;
+  glGetShaderiv(*shader, GL_COMPILE_STATUS, &compiled);
+  if (!compiled) {
+    VLOG(2) << "Unable to compile shader:\n" << shader_source;
+    GL_ERROR_LOG(Shader, *shader, "compile");
+    glDeleteShader(*shader);
+    *shader = 0;
+    return false;
+  }
+  return true;
 }
 
 bool CreateShaderProgram(
     GLuint vertex_shader, GLuint fragment_shader,
     const std::unordered_map<GLuint, std::string>& attributes,
     GLuint* shader_program) {
-    *shader_program = glCreateProgram();
-    if (*shader_program == 0) {
-        VLOG(2) << "Unable to create shader program";
-        return false;
-    }
-    glAttachShader(*shader_program, vertex_shader);
-    glAttachShader(*shader_program, fragment_shader);
+  *shader_program = glCreateProgram();
+  if (*shader_program == 0) {
+    VLOG(2) << "Unable to create shader program";
+    return false;
+  }
+  glAttachShader(*shader_program, vertex_shader);
+  glAttachShader(*shader_program, fragment_shader);
 
-    for (const auto& it : attributes) {
-        glBindAttribLocation(*shader_program, it.first, it.second.c_str());
-    }
-    glLinkProgram(*shader_program);
+  for (const auto& it : attributes) {
+    glBindAttribLocation(*shader_program, it.first, it.second.c_str());
+  }
+  glLinkProgram(*shader_program);
 
-    GLint is_linked = 0;
-    glGetProgramiv(*shader_program, GL_LINK_STATUS, &is_linked);
-    if (!is_linked) {
-        glDeleteProgram(*shader_program);
-        *shader_program = 0;
-        return false;
-    }
-    return true;
+  GLint is_linked = 0;
+  glGetProgramiv(*shader_program, GL_LINK_STATUS, &is_linked);
+  if (!is_linked) {
+    glDeleteProgram(*shader_program);
+    *shader_program = 0;
+    return false;
+  }
+  return true;
 }
 
 }  // namespace mediapipe

@@ -15,19 +15,49 @@
 #ifndef MEDIAPIPE_CALCULATORS_TENSOR_IMAGE_TO_TENSOR_UTILS_H_
 #define MEDIAPIPE_CALCULATORS_TENSOR_IMAGE_TO_TENSOR_UTILS_H_
 
-#include "absl/types/optional.h"
-#include "mediapipe/framework/formats/rect.pb.h"
-#include "mediapipe/framework/port/statusor.h"
 #include <array>
+#include <optional>
+
+#include "absl/types/optional.h"
+#include "mediapipe/calculators/tensor/image_to_tensor_calculator.pb.h"
+#include "mediapipe/framework/api2/packet.h"
+#include "mediapipe/framework/api2/port.h"
+#include "mediapipe/framework/formats/image.h"
+#include "mediapipe/framework/formats/rect.pb.h"
+#include "mediapipe/framework/formats/tensor.h"
+#include "mediapipe/framework/port/ret_check.h"
+#include "mediapipe/framework/port/statusor.h"
+#if !MEDIAPIPE_DISABLE_GPU
+#include "mediapipe/gpu/gpu_buffer.h"
+#endif  // !MEDIAPIPE_DISABLE_GPU
+#include "mediapipe/gpu/gpu_origin.pb.h"
 
 namespace mediapipe {
 
 struct RotatedRect {
-    float center_x;
-    float center_y;
-    float width;
-    float height;
-    float rotation;
+  float center_x;
+  float center_y;
+  float width;
+  float height;
+  float rotation;
+};
+
+// Pixel extrapolation method.
+// When converting image to tensor it may happen that tensor needs to read
+// pixels outside image boundaries. Border mode helps to specify how such pixels
+// will be calculated.
+// TODO: Consider moving this to a separate border_mode.h file.
+enum class BorderMode { kZero, kReplicate };
+
+// Struct that host commonly accessed parameters used in the
+// ImageTo[Batch]TensorCalculator.
+struct OutputTensorParams {
+  std::optional<int> output_height;
+  std::optional<int> output_width;
+  int output_batch;
+  bool is_float_output;
+  float range_min;
+  float range_max;
 };
 
 // Generates a new ROI or converts it from normalized rect.
@@ -46,8 +76,8 @@ absl::StatusOr<std::array<float, 4>> PadRoi(int input_tensor_width,
 // ValueTransformation transform = ...
 // float transformed_value = transform.scale * value + transfrom.offset;
 struct ValueTransformation {
-    float scale;
-    float offset;
+  float scale;
+  float offset;
 };
 
 // Returns value transformation to apply to a value in order to convert it from
@@ -93,6 +123,111 @@ void GetRotatedSubRectToRectTransformMatrix(const RotatedRect& sub_rect,
 void GetTransposedRotatedSubRectToRectTransformMatrix(
     const RotatedRect& sub_rect, int rect_width, int rect_height,
     bool flip_horizontaly, std::array<float, 16>* matrix);
+
+// Validates the output dimensions set in the option proto. The input option
+// proto is expected to have to following fields:
+//  output_tensor_float_range, output_tensor_int_range, output_tensor_uint_range
+//  output_tensor_width, output_tensor_height.
+// See ImageToTensorCalculatorOptions for the description of each field.
+template <typename T>
+absl::Status ValidateOptionOutputDims(const T& options) {
+  RET_CHECK(options.has_output_tensor_float_range() ||
+            options.has_output_tensor_int_range() ||
+            options.has_output_tensor_uint_range())
+      << "Output tensor range is required.";
+  if (options.has_output_tensor_float_range()) {
+    RET_CHECK_LT(options.output_tensor_float_range().min(),
+                 options.output_tensor_float_range().max())
+        << "Valid output float tensor range is required.";
+  }
+  if (options.has_output_tensor_uint_range()) {
+    RET_CHECK_LT(options.output_tensor_uint_range().min(),
+                 options.output_tensor_uint_range().max())
+        << "Valid output uint tensor range is required.";
+    RET_CHECK_GE(options.output_tensor_uint_range().min(), 0)
+        << "The minimum of the output uint tensor range must be "
+           "non-negative.";
+    RET_CHECK_LE(options.output_tensor_uint_range().max(), 255)
+        << "The maximum of the output uint tensor range must be less than or "
+           "equal to 255.";
+  }
+  if (options.has_output_tensor_int_range()) {
+    RET_CHECK_LT(options.output_tensor_int_range().min(),
+                 options.output_tensor_int_range().max())
+        << "Valid output int tensor range is required.";
+    RET_CHECK_GE(options.output_tensor_int_range().min(), -128)
+        << "The minimum of the output int tensor range must be greater than "
+           "or equal to -128.";
+    RET_CHECK_LE(options.output_tensor_int_range().max(), 127)
+        << "The maximum of the output int tensor range must be less than or "
+           "equal to 127.";
+  }
+  if (options.has_output_tensor_width()) {
+    RET_CHECK_GT(options.output_tensor_width(), 0)
+        << "Valid output tensor width is required.";
+  }
+  if (options.has_output_tensor_height()) {
+    RET_CHECK_GT(options.output_tensor_height(), 0)
+        << "Valid output tensor height is required.";
+  }
+  return absl::OkStatus();
+}
+
+template <typename T>
+OutputTensorParams GetOutputTensorParams(const T& options) {
+  OutputTensorParams params;
+  if (options.has_output_tensor_uint_range()) {
+    params.range_min =
+        static_cast<float>(options.output_tensor_uint_range().min());
+    params.range_max =
+        static_cast<float>(options.output_tensor_uint_range().max());
+  } else if (options.has_output_tensor_int_range()) {
+    params.range_min =
+        static_cast<float>(options.output_tensor_int_range().min());
+    params.range_max =
+        static_cast<float>(options.output_tensor_int_range().max());
+  } else {
+    params.range_min = options.output_tensor_float_range().min();
+    params.range_max = options.output_tensor_float_range().max();
+  }
+  if (options.has_output_tensor_width()) {
+    params.output_width = options.output_tensor_width();
+  }
+  if (options.has_output_tensor_height()) {
+    params.output_height = options.output_tensor_height();
+  }
+  params.is_float_output = options.has_output_tensor_float_range();
+  params.output_batch = 1;
+  return params;
+}
+
+// Returns whether the GPU input format starts at the bottom.
+template <typename T>
+bool DoesGpuInputStartAtBottom(const T& options) {
+  return options.gpu_origin() != mediapipe::GpuOrigin_Mode_TOP_LEFT;
+}
+
+// Converts the BorderMode proto into struct.
+BorderMode GetBorderMode(
+    const mediapipe::ImageToTensorCalculatorOptions::BorderMode& mode);
+
+// Gets the output tensor type.
+Tensor::ElementType GetOutputTensorType(bool uses_gpu,
+                                        const OutputTensorParams& params);
+
+// Gets the number of output channels from the input Image format.
+int GetNumOutputChannels(const mediapipe::Image& image);
+
+// Converts the packet that hosts different format (Image, ImageFrame,
+// GpuBuffer) into the mediapipe::Image format.
+absl::StatusOr<std::shared_ptr<const mediapipe::Image>> GetInputImage(
+    const api2::Packet<api2::OneOf<Image, mediapipe::ImageFrame>>&
+        image_packet);
+
+#if !MEDIAPIPE_DISABLE_GPU
+absl::StatusOr<std::shared_ptr<const mediapipe::Image>> GetInputImage(
+    const api2::Packet<mediapipe::GpuBuffer>& image_gpu_packet);
+#endif  // !MEDIAPIPE_DISABLE_GPU
 
 }  // namespace mediapipe
 

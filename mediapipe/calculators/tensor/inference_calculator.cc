@@ -13,6 +13,13 @@
 // limitations under the License.
 
 #include "mediapipe/calculators/tensor/inference_calculator.h"
+
+#include <cstring>
+#include <memory>
+#include <string>
+#include <vector>
+
+#include "absl/status/status.h"
 #include "absl/strings/string_view.h"
 #include "mediapipe/calculators/tensor/inference_calculator.pb.h"
 #include "mediapipe/framework/api2/packet.h"
@@ -29,47 +36,52 @@ namespace api2 {
 class InferenceCalculatorSelectorImpl
     : public SubgraphImpl<InferenceCalculatorSelector,
                           InferenceCalculatorSelectorImpl> {
-public:
-    absl::StatusOr<CalculatorGraphConfig> GetConfig(
-        const CalculatorGraphConfig::Node& subgraph_node) {
-        const auto& options =
-            Subgraph::GetOptions<mediapipe::InferenceCalculatorOptions>(
-                subgraph_node);
-        std::vector<absl::string_view> impls;
+ public:
+  absl::StatusOr<CalculatorGraphConfig> GetConfig(
+      const CalculatorGraphConfig::Node& subgraph_node) {
+    const auto& options =
+        Subgraph::GetOptions<mediapipe::InferenceCalculatorOptions>(
+            subgraph_node);
+    std::vector<absl::string_view> impls;
 
-        if ((options.has_delegate() && options.delegate().has_cuda())) {
-            impls.emplace_back("OnnxCUDA");
-        }
+    if ((options.has_delegate() && options.delegate().has_cuda())) {
+        impls.emplace_back("OnnxCUDA");
+    }
 
-        if ((options.has_delegate() && options.delegate().has_tensorrt())) {
-            impls.emplace_back("OnnxTensorRT");
-        }
+    if ((options.has_delegate() && options.delegate().has_tensorrt())) {
+        impls.emplace_back("OnnxTensorRT");
+    }
 
-        const bool should_use_gpu =
-            !options.has_delegate() ||  // Use GPU delegate if not specified
-            (options.has_delegate() && options.delegate().has_gpu());
-        if (should_use_gpu) {
-            const auto& api = options.delegate().gpu().api();
-            using Gpu = ::mediapipe::InferenceCalculatorOptions::Delegate::Gpu;
-            impls.emplace_back("Metal");
-            const bool prefer_gl_advanced =
-                options.delegate().gpu().use_advanced_gpu_api() &&
-                (api == Gpu::ANY || api == Gpu::OPENGL || api == Gpu::OPENCL);
-            if (prefer_gl_advanced) {
-                impls.emplace_back("GlAdvanced");
-                impls.emplace_back("Gl");
-            } else {
-                impls.emplace_back("Gl");
-                impls.emplace_back("GlAdvanced");
-            }
+    const bool should_use_gpu =
+        !options.has_delegate() ||  // Use GPU delegate if not specified
+        (options.has_delegate() && options.delegate().has_gpu());
+    if (should_use_gpu) {
+        const auto& api = options.delegate().gpu().api();
+        using Gpu = ::mediapipe::InferenceCalculatorOptions::Delegate::Gpu;
+        impls.emplace_back("Metal");
+        const bool prefer_gl_advanced =
+            options.delegate().gpu().use_advanced_gpu_api() &&
+            (api == Gpu::ANY || api == Gpu::OPENGL || api == Gpu::OPENCL);
+        if (prefer_gl_advanced) {
+            impls.emplace_back("GlAdvanced");
+            impls.emplace_back("Gl");
+        } else {
+            impls.emplace_back("Gl");
+            impls.emplace_back("GlAdvanced");
         }
-        impls.emplace_back("Cpu");
-        for (const auto& suffix : impls) {
+    }
+    impls.emplace_back("Cpu");
+    impls.emplace_back("Xnnpack");
+    for (const auto& suffix : impls) {
             const auto impl = absl::StrCat("InferenceCalculator", suffix);
             if (!mediapipe::CalculatorBaseRegistry::IsRegistered(impl)) {
                 continue;
             }
-            CalculatorGraphConfig::Node impl_node = subgraph_node;
+            VLOG(1) << "Using " << suffix << " for InferenceCalculator with "
+              << (options.has_model_path()
+                      ? "model " + options.model_path()
+                      : "output_stream " + subgraph_node.output_stream(0));
+      CalculatorGraphConfig::Node impl_node = subgraph_node;
             impl_node.set_calculator(impl);
             return tool::MakeSingleNodeGraph(std::move(impl_node));
         }
@@ -90,14 +102,14 @@ absl::StatusOr<Packet<TfLiteModelPtr>> InferenceCalculator::GetModelAsPacket(
 
 absl::StatusOr<Packet<tflite::OpResolver>>
 InferenceCalculator::GetOpResolverAsPacket(CalculatorContext* cc) {
-    if (kSideInOpResolver(cc).IsConnected()) {
-        return kSideInOpResolver(cc).As<tflite::OpResolver>();
-    } else if (kSideInCustomOpResolver(cc).IsConnected()) {
-        return kSideInCustomOpResolver(cc).As<tflite::OpResolver>();
-    }
-    return PacketAdopting<tflite::OpResolver>(
-        std::make_unique<
-            tflite::ops::builtin::BuiltinOpResolverWithoutDefaultDelegates>());
+  if (kSideInOpResolver(cc).IsConnected()) {
+    return kSideInOpResolver(cc).As<tflite::OpResolver>();
+  } else if (kSideInCustomOpResolver(cc).IsConnected()) {
+    return kSideInCustomOpResolver(cc).As<tflite::OpResolver>();
+  }
+  return PacketAdopting<tflite::OpResolver>(
+      std::make_unique<tflite_shims::ops::builtin::
+                           BuiltinOpResolverWithoutDefaultDelegates>());
 }
 
 }  // namespace api2

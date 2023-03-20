@@ -186,6 +186,7 @@ cc_library(
     hdrs = [
         "resource_util.h",
     ],
+
     # We use Objective-C++ on iOS.
     copts = select({
         "//conditions:default": [],
@@ -228,6 +229,7 @@ cc_library(
     visibility = ["//visibility:public"],
     deps = [
         "//mediapipe/framework/port:logging",
+        "@com_google_absl//absl/container:flat_hash_map",
         "@com_google_absl//absl/functional:function_ref",
     ],
 )
@@ -253,6 +255,7 @@ cc_library(
     deps = [
         "//mediapipe/framework/formats:detection_cc_proto",
         "//mediapipe/framework/formats:location",
+        "//mediapipe/framework/formats:location_opencv",
         "@com_google_absl//absl/strings:str_format",
         "@com_google_absl//absl/types:variant",
         "//mediapipe/framework/port:status",
@@ -363,6 +366,47 @@ cc_test(
     srcs = ["rectangle_util_test.cc"],
     deps = [
         ":rectangle_util",
+        "//mediapipe/framework/port:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "image_test_utils",
+    testonly = 1,
+    srcs = ["image_test_utils.cc"],
+    hdrs = ["image_test_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//mediapipe/framework:packet",
+        "//mediapipe/framework:timestamp",
+        "//mediapipe/framework/formats:image",
+        "//mediapipe/framework/formats:image_frame",
+        "//mediapipe/framework/formats:image_frame_opencv",
+        "//mediapipe/framework/port:opencv_core",
+        "//mediapipe/framework/port:opencv_imgcodecs",
+        "//mediapipe/framework/port:opencv_imgproc",
+    ],
+)
+
+cc_library(
+    name = "graph_builder_utils",
+    srcs = ["graph_builder_utils.cc"],
+    hdrs = ["graph_builder_utils.h"],
+    visibility = ["//visibility:public"],
+    deps = [
+        "//mediapipe/framework:calculator_cc_proto",
+        "//mediapipe/framework:calculator_framework",
+        "@com_google_absl//absl/strings",
+    ],
+)
+
+cc_test(
+    name = "graph_builder_utils_test",
+    srcs = ["graph_builder_utils_test.cc"],
+    deps = [
+        ":graph_builder_utils",
+        "//mediapipe/framework:calculator_cc_proto",
+        "//mediapipe/framework/port:gtest",
         "//mediapipe/framework/port:gtest_main",
     ],
 )

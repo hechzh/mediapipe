@@ -19,6 +19,7 @@
 namespace mediapipe {
 namespace {
 
+using ::mediapipe::NormalizedRect;
 using ::testing::FloatNear;
 
 class RectangleUtilTest : public testing::Test {
