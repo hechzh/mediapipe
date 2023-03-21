@@ -36,6 +36,7 @@ constexpr char kDetectionTag[] = "DETECTION";
 constexpr char kDetectionsTag[] = "DETECTIONS";
 constexpr char kLabelsTag[] = "LABELS";
 constexpr char kLabelsCsvTag[] = "LABELS_CSV";
+constexpr char kLabelMapTag[] = "LABEL_MAP";
 
 using mediapipe::RE2;
 using Detections = std::vector<Detection>;
@@ -136,55 +137,69 @@ absl::Status FilterDetectionCalculator::GetContract(CalculatorContract* cc) {
     RET_CHECK(!cc->Inputs().GetTags().empty());
     RET_CHECK(!cc->Outputs().GetTags().empty());
 
-    if (cc->Inputs().HasTag(kDetectionTag)) {
-        cc->Inputs().Tag(kDetectionTag).Set<Detection>();
-        cc->Outputs().Tag(kDetectionTag).Set<Detection>();
-    }
-    if (cc->Inputs().HasTag(kDetectionsTag)) {
-        cc->Inputs().Tag(kDetectionsTag).Set<Detections>();
-        cc->Outputs().Tag(kDetectionsTag).Set<Detections>();
-    }
-    if (cc->InputSidePackets().HasTag(kLabelsTag)) {
-        cc->InputSidePackets().Tag(kLabelsTag).Set<Strings>();
-    }
-    if (cc->InputSidePackets().HasTag(kLabelsCsvTag)) {
-        cc->InputSidePackets().Tag(kLabelsCsvTag).Set<std::string>();
-    }
-    return absl::OkStatus();
+  if (cc->Inputs().HasTag(kDetectionTag)) {
+    cc->Inputs().Tag(kDetectionTag).Set<Detection>();
+    cc->Outputs().Tag(kDetectionTag).Set<Detection>();
+  }
+  if (cc->Inputs().HasTag(kDetectionsTag)) {
+    cc->Inputs().Tag(kDetectionsTag).Set<Detections>();
+    cc->Outputs().Tag(kDetectionsTag).Set<Detections>();
+  }
+  if (cc->InputSidePackets().HasTag(kLabelsTag)) {
+    cc->InputSidePackets().Tag(kLabelsTag).Set<Strings>();
+  }
+  if (cc->InputSidePackets().HasTag(kLabelsCsvTag)) {
+    cc->InputSidePackets().Tag(kLabelsCsvTag).Set<std::string>();
+  }
+  if (cc->InputSidePackets().HasTag(kLabelMapTag)) {
+    cc->InputSidePackets()
+        .Tag(kLabelMapTag)
+        .Set<std::unique_ptr<std::map<int, std::string>>>();
+  }
+  return absl::OkStatus();
 }
 
 absl::Status FilterDetectionCalculator::Open(CalculatorContext* cc) {
-    cc->SetOffset(TimestampDiff(0));
-    options_ = cc->Options<FilterDetectionCalculatorOptions>();
-    limit_labels_ = cc->InputSidePackets().HasTag(kLabelsTag) ||
-                    cc->InputSidePackets().HasTag(kLabelsCsvTag);
-    if (limit_labels_) {
-        Strings allowlist_labels;
-        if (cc->InputSidePackets().HasTag(kLabelsCsvTag)) {
-            allowlist_labels = absl::StrSplit(
-                cc->InputSidePackets().Tag(kLabelsCsvTag).Get<std::string>(), ',',
-                absl::SkipWhitespace());
-            for (auto& e : allowlist_labels) {
-                absl::StripAsciiWhitespace(&e);
-            }
-        } else {
-            allowlist_labels = cc->InputSidePackets().Tag(kLabelsTag).Get<Strings>();
-        }
-        allowed_labels_.insert(allowlist_labels.begin(), allowlist_labels.end());
+  cc->SetOffset(TimestampDiff(0));
+  options_ = cc->Options<FilterDetectionCalculatorOptions>();
+  limit_labels_ = cc->InputSidePackets().HasTag(kLabelsTag) ||
+                  cc->InputSidePackets().HasTag(kLabelsCsvTag) ||
+                  cc->InputSidePackets().HasTag(kLabelMapTag);
+  if (limit_labels_) {
+    Strings allowlist_labels;
+    if (cc->InputSidePackets().HasTag(kLabelsCsvTag)) {
+      allowlist_labels = absl::StrSplit(
+          cc->InputSidePackets().Tag(kLabelsCsvTag).Get<std::string>(), ',',
+          absl::SkipWhitespace());
+      for (auto& e : allowlist_labels) {
+        absl::StripAsciiWhitespace(&e);
+      }
+    } else if (cc->InputSidePackets().HasTag(kLabelsTag)) {
+      allowlist_labels = cc->InputSidePackets().Tag(kLabelsTag).Get<Strings>();
+    } else if (cc->InputSidePackets().HasTag(kLabelMapTag)) {
+      auto label_map = cc->InputSidePackets()
+                           .Tag(kLabelMapTag)
+                           .Get<std::unique_ptr<std::map<int, std::string>>>()
+                           .get();
+      for (const auto& [_, v] : *label_map) {
+        allowlist_labels.push_back(v);
+      }
     }
-    if (limit_labels_ && allowed_labels_.empty()) {
-        if (options_.fail_on_empty_labels()) {
-            cc->GetCounter("VideosWithEmptyLabelsAllowlist")->Increment();
-            return tool::StatusFail(
-                "FilterDetectionCalculator received empty allowlist with "
-                "fail_on_empty_labels = true.");
-        }
-        if (options_.empty_allowed_labels_means_allow_everything()) {
-            // Continue as if side_input was not provided, i.e. pass all labels.
-            limit_labels_ = false;
-        }
+    allowed_labels_.insert(allowlist_labels.begin(), allowlist_labels.end());
+  }
+  if (limit_labels_ && allowed_labels_.empty()) {
+    if (options_.fail_on_empty_labels()) {
+      cc->GetCounter("VideosWithEmptyLabelsAllowlist")->Increment();
+      return tool::StatusFail(
+          "FilterDetectionCalculator received empty allowlist with "
+          "fail_on_empty_labels = true.");
     }
-    return absl::OkStatus();
+    if (options_.empty_allowed_labels_means_allow_everything()) {
+      // Continue as if side_input was not provided, i.e. pass all labels.
+      limit_labels_ = false;
+    }
+  }
+  return absl::OkStatus();
 }
 
 absl::Status FilterDetectionCalculator::Process(CalculatorContext* cc) {
