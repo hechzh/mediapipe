@@ -142,16 +142,16 @@ struct InferenceCalculatorCpu : public InferenceCalculator {
     static constexpr char kCalculatorName[] = "InferenceCalculatorCpu";
 };
 
+struct InferenceCalculatorXnnpack : public InferenceCalculator {
+  static constexpr char kCalculatorName[] = "InferenceCalculatorXnnpack";
+};
+
 struct InferenceCalculatorOnnxCUDA : public InferenceCalculator {
     static constexpr char kCalculatorName[] = "InferenceCalculatorOnnxCUDA";
 };
 
 struct InferenceCalculatorOnnxTensorRT : public InferenceCalculator {
     static constexpr char kCalculatorName[] = "InferenceCalculatorOnnxTensorRT";
-};
-
-struct InferenceCalculatorXnnpack : public InferenceCalculator {
-  static constexpr char kCalculatorName[] = "InferenceCalculatorXnnpack";
 };
 
 }  // namespace api2

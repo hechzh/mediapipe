@@ -183,9 +183,6 @@ http_archive(
     urls = [
         "https://github.com/pybind/pybind11/archive/v2.10.1.zip",
     ],
-    sha256 = "fcf94065efcfd0a7a828bacf118fa11c43f6390d0c805e3e6342ac119f2e9976",
-    strip_prefix = "pybind11-2.10.1",
-    build_file = "@pybind11_bazel//:pybind11.BUILD",
 )
 
 http_archive(
@@ -316,12 +313,6 @@ http_archive(
     patch_args = [
         "-p1",
     ],
-    patches = [
-        # Bypass checking ios unit test runner when building MP ios applications.
-        "@//third_party:build_bazel_rules_apple_bypass_test_runner_check.diff",
-    ],
-    sha256 = "77e8bf6fda706f420a55874ae6ee4df0c9d95da6c7838228b26910fc82eea5a2",
-    url = "https://github.com/bazelbuild/rules_apple/releases/download/0.32.0/rules_apple.0.32.0.tar.gz",
 )
 
 load(
