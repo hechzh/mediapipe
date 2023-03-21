@@ -13,6 +13,17 @@ nav_order: 2
 {:toc}
 ---
 
+**Attention:** *Thanks for your interest in MediaPipe! We are moving to
+[https://developers.google.com/mediapipe](https://developers.google.com/mediapipe)
+as the primary developer documentation
+site for MediaPipe starting April 3, 2023. This content will not be moved to
+the new site, but will remain available in the source code repository on an
+as-is basis.*
+
+*This notice and web page will be removed on April 3, 2023.*
+
+----
+
 MediaPipe Android Solution APIs (currently in alpha) are available in:
 
 *   [MediaPipe Face Detection](../solutions/face_detection#android-solution-api)
@@ -55,18 +66,18 @@ To build these apps:
 
 2.  Import mediapipe/examples/android/solutions directory into Android Studio.
 
-    ![Screenshot](../images/import_mp_android_studio_project.png)
+    ![Screenshot](https://mediapipe.dev/images/import_mp_android_studio_project.png)
 
 3.  For Windows users, run `create_win_symlinks.bat` as administrator to create
     res directory symlinks.
 
-    ![Screenshot](../images/run_create_win_symlinks.png)
+    ![Screenshot](https://mediapipe.dev/images/run_create_win_symlinks.png)
 
 4.  Select "File" -> "Sync Project with Gradle Files" to sync project.
 
 5.  Run solution example app in Android Studio.
 
-    ![Screenshot](../images/run_android_solution_app.png)
+    ![Screenshot](https://mediapipe.dev/images/run_android_solution_app.png)
 
 6.  (Optional) Run solutions on CPU.
 

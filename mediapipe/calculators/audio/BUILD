@@ -12,11 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+load("//mediapipe/framework/port:build_config.bzl", "mediapipe_cc_proto_library")
+
 licenses(["notice"])
 
 package(default_visibility = ["//visibility:private"])
-
-load("//mediapipe/framework/port:build_config.bzl", "mediapipe_cc_proto_library")
 
 proto_library(
     name = "mfcc_mel_calculators_proto",
@@ -197,7 +197,6 @@ cc_library(
         ":spectrogram_calculator_cc_proto",
         "//mediapipe/framework:calculator_framework",
         "//mediapipe/framework/formats:matrix",
-        "//mediapipe/framework/formats:time_series_header_cc_proto",
         "//mediapipe/framework/port:core_proto",
         "//mediapipe/framework/port:integral_types",
         "//mediapipe/framework/port:logging",
@@ -277,6 +276,7 @@ cc_test(
         "//mediapipe/framework/port:gtest_main",
         "//mediapipe/framework/port:status",
         "//mediapipe/util:time_series_test_util",
+        "@com_google_audio_tools//audio/dsp/mfcc",
         "@eigen_archive//:eigen3",
     ],
 )
@@ -352,6 +352,8 @@ cc_test(
         "//mediapipe/framework/port:status",
         "//mediapipe/framework/tool:validate_type",
         "//mediapipe/util:time_series_test_util",
+        "@com_google_audio_tools//audio/dsp:resampler",
+        "@com_google_audio_tools//audio/dsp:resampler_q",
         "@com_google_audio_tools//audio/dsp:signal_vector_util",
         "@eigen_archive//:eigen3",
     ],

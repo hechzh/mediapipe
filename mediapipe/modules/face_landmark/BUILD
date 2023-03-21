@@ -16,6 +16,10 @@ load(
     "//mediapipe/framework/tool:mediapipe_graph.bzl",
     "mediapipe_simple_subgraph",
 )
+load(
+    "//mediapipe/framework/tool:mediapipe_files.bzl",
+    "mediapipe_files",
+)
 
 licenses(["notice"])
 
@@ -215,7 +219,7 @@ mediapipe_simple_subgraph(
     ],
 )
 
-exports_files(
+mediapipe_files(
     srcs = [
         "face_landmark.tflite",
         "face_landmark_with_attention.tflite",

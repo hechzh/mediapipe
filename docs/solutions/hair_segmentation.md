@@ -18,7 +18,17 @@ nav_order: 8
 </details>
 ---
 
-![hair_segmentation_android_gpu_gif](../images/mobile/hair_segmentation_android_gpu.gif)
+**Attention:** *Thank you for your interest in MediaPipe Solutions.
+As of March 1, 2023, this solution is planned to be upgraded to a new MediaPipe
+Solution. For more information, see the new
+[MediaPipe Solutions](https://developers.google.com/mediapipe/solutions/guide#legacy)
+site.*
+
+*This notice and web page will be removed on April 3, 2023.*
+
+----
+
+![hair_segmentation_android_gpu_gif](https://mediapipe.dev/images/mobile/hair_segmentation_android_gpu.gif)
 
 ## Example Apps
 
@@ -58,7 +68,7 @@ processed all locally in real-time and never leaves your device. Please see
 [MediaPipe on the Web](https://developers.googleblog.com/2020/01/mediapipe-on-web.html)
 in Google Developers Blog for details.
 
-![visualizer_runner](../images/visualizer_runner.png)
+![visualizer_runner](https://mediapipe.dev/images/visualizer_runner.png)
 
 ## Resources
 

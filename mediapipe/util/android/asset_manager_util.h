@@ -19,88 +19,97 @@
 #include <vector>
 
 #ifdef __ANDROID__
+#include <android/asset_manager.h>
+#include <android/asset_manager_jni.h>
+#include <jni.h>
+
 #include "mediapipe/framework/port/canonical_errors.h"
 #include "mediapipe/framework/port/singleton.h"
 #include "mediapipe/framework/port/status.h"
 #include "mediapipe/framework/port/statusor.h"
-#include <android/asset_manager.h>
-#include <android/asset_manager_jni.h>
-#include <jni.h>
 
 namespace mediapipe {
 
 // Thin wrapper over AAssetManager provided by JNI. This class is meant to be
 // used as a singleton.
-// Usage: Call InitializeFromActivity from a JNI function that has access to the
-// Java activity in the Android application. This initializes the asset manager
-// and now files bundled in the assets folder can be read using ReadFile().
+//
+// Usage: Call one of Initialize* functions from a JNI function that has access
+// to a context/activity/etc. This initializes the asset manager and now files
+// bundled in the assets folder can be read using ReadFile().
+//
+// NOTE: initialization should happen strictly once and guaranteed to complete
+// before any possible use, otherwise it cannot be used safely across multiple
+// threads.
 class AssetManager {
-public:
-    AssetManager(const AssetManager&) = delete;
-    AssetManager& operator=(const AssetManager&) = delete;
+ public:
+  AssetManager(const AssetManager&) = delete;
+  AssetManager& operator=(const AssetManager&) = delete;
 
-    // Returns the asset manager if it has been set by a call to
-    // InitializeFromActivity, otherwise returns nullptr.
-    AAssetManager* GetAssetManager();
-    // Returns true if AAssetManager was successfully initialized.
-    bool InitializeFromAssetManager(JNIEnv* env, jobject local_asset_manager,
-                                    const std::string& cache_dir_path);
+  // Returns the asset manager if it has been set by one of Initialize*
+  // functions, otherwise returns nullptr.
+  AAssetManager* GetAssetManager();
 
-    // Returns true if AAssetManager was successfully initialized.
-    // cache_dir_path should be set to activity.getCacheDir().getAbsolutePath().
-    // We could get it from the activity, but we have the Java layer pass it
-    // directly for convenience.
-    bool InitializeFromActivity(JNIEnv* env, jobject activity,
-                                const std::string& cache_dir_path);
+  // Returns true if AAssetManager was successfully initialized.
+  bool InitializeFromAssetManager(JNIEnv* env, jobject local_asset_manager,
+                                  const std::string& cache_dir_path);
 
-    // Returns true if AAssetManager was successfully initialized.
-    ABSL_DEPRECATED("Use InitializeFromActivity instead.")
-    bool InitializeFromAssetManager(JNIEnv* env, jobject local_asset_manager);
+  // Returns true if AAssetManager was successfully initialized.
+  // cache_dir_path should be set to activity.getCacheDir().getAbsolutePath().
+  // We could get it from the activity, but we have the Java layer pass it
+  // directly for convenience.
+  bool InitializeFromActivity(JNIEnv* env, jobject activity,
+                              const std::string& cache_dir_path);
 
-    // Returns true if AAssetManager was successfully initialized.
-    // cache_dir_path should be set to context.getCacheDir().getAbsolutePath().
-    // We could get it from the context, but we have the Java layer pass it
-    // directly for convenience.
-    bool InitializeFromContext(JNIEnv* env, jobject context,
-                               const std::string& cache_dir_path);
+  // Returns true if AAssetManager was successfully initialized.
+  ABSL_DEPRECATED("Use one of alternate Initialize* functions instead.")
+  bool InitializeFromAssetManager(JNIEnv* env, jobject local_asset_manager);
 
-    // Checks if a file exists. Returns true on success, false otherwise. If it
-    // does exist, then 'is_dir' will be set to indicate whether the file is a
-    // directory.
-    bool FileExists(const std::string& filename, bool* is_dir = nullptr);
+  // Returns true if AAssetManager was successfully initialized.
+  // cache_dir_path should be set to context.getCacheDir().getAbsolutePath().
+  // We could get it from the context, but we have the Java layer pass it
+  // directly for convenience.
+  bool InitializeFromContext(JNIEnv* env, jobject context,
+                             const std::string& cache_dir_path);
 
-    // Reads a file into output. Returns true on success, false otherwise.
-    bool ReadFile(const std::string& filename, std::string* output);
+  // Checks if a file exists. Returns true on success, false otherwise. If it
+  // does exist, then 'is_dir' will be set to indicate whether the file is a
+  // directory.
+  bool FileExists(const std::string& filename, bool* is_dir = nullptr);
 
-    // Reads the raw bytes referred to by the supplied content URI. Returns true
-    // on success, false otherwise.
-    absl::Status ReadContentUri(const std::string& content_uri,
-                                std::string* output);
+  // Reads a file into output. Returns true on success, false otherwise.
+  bool ReadFile(const std::string& filename, std::string* output);
 
-    // Returns the path to the Android cache directory. Will be empty if
-    // InitializeFromActivity has not been called.
-    const std::string& GetCacheDirPath();
+  // Reads the raw bytes referred to by the supplied content URI. Returns true
+  // on success, false otherwise.
+  absl::Status ReadContentUri(const std::string& content_uri,
+                              std::string* output);
 
-    // Caches the contents of the given asset as a file, and returns a path to
-    // that file. This can be used to pass an asset to APIs that require a path
-    // to a filesystem file.
-    absl::StatusOr<std::string> CachedFileFromAsset(
-        const std::string& asset_path);
+  // Returns the path to the Android cache directory. Will be empty if
+  // AssetManager hasn't been initialized.
+  const std::string& GetCacheDirPath();
 
-private:
-    // Private constructor since this class is meant to be a singleton.
-    AssetManager() = default;
+  // Caches the contents of the given asset as a file, and returns a path to
+  // that file. This can be used to pass an asset to APIs that require a path
+  // to a filesystem file.
+  // NOTE: this is _not_ thread-safe, e.g. if two threads are requesting the
+  // same file
+  absl::StatusOr<std::string> CachedFileFromAsset(
+      const std::string& asset_path);
 
-    // Pointer to asset manager from JNI.
-    AAssetManager* asset_manager_ = nullptr;
+ private:
+  // Private constructor since this class is meant to be a singleton.
+  AssetManager() = default;
 
-    // The context from which assets should be loaded.
-    jobject context_;
+  // Pointer to asset manager from JNI.
+  AAssetManager* asset_manager_ = nullptr;
 
-    // Path to the Android cache directory for our context.
-    std::string cache_dir_path_;
+  // The context from which assets should be loaded.
+  jobject context_;
 
-    friend class Singleton<AssetManager>;
+  // Path to the Android cache directory for our context.
+  std::string cache_dir_path_;
+
+  friend class Singleton<AssetManager>;
 };
 
 }  // namespace mediapipe

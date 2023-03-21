@@ -19,6 +19,7 @@
 
 namespace {
 
+using ::mediapipe::NormalizedRect;
 using mediapipe::TrackedDetection;
 
 // Checks if a point is out of view.

@@ -15,11 +15,12 @@
 #ifndef MEDIAPIPE_CALCULATORS_LANDMARKS_TO_TENSOR_CALCULATOR_H_
 #define MEDIAPIPE_CALCULATORS_LANDMARKS_TO_TENSOR_CALCULATOR_H_
 
+#include <memory>
+
 #include "mediapipe/framework/api2/node.h"
 #include "mediapipe/framework/calculator_framework.h"
 #include "mediapipe/framework/formats/landmark.pb.h"
 #include "mediapipe/framework/formats/tensor.h"
-#include <memory>
 
 namespace mediapipe {
 namespace api2 {
@@ -27,8 +28,12 @@ namespace api2 {
 // A calculator for converting landmars into a Tensor.
 //
 // Input:
-//   LANDMARKS - LandmarkList
+//   LANDMARKS (optional) - LandmarkList
 //     Landmarks to be converted into a Tensor.
+//   NORM_LANDMARKS (optional) - NormalizedLandmarkList.
+//     Normalized landmarks to be converted into a Tensor.
+//   IMAGE_SIZE (optional) - std::pair<int, int>
+//     Image size to scale NORM_LANDMARKS.
 //
 // Output:
 //   TENSORS - std::vector<Tensor>
@@ -47,11 +52,16 @@ namespace api2 {
 //   }
 // }
 class LandmarksToTensorCalculator : public NodeIntf {
-public:
-    static constexpr Input<LandmarkList>::Optional kInLandmarkList{"LANDMARKS"};
-    static constexpr Output<std::vector<Tensor>> kOutTensors{"TENSORS"};
-    MEDIAPIPE_NODE_INTERFACE(LandmarksToTensorCalculator, kInLandmarkList,
-                             kOutTensors);
+ public:
+  static constexpr Input<mediapipe::LandmarkList>::Optional kInLandmarkList{
+      "LANDMARKS"};
+  static constexpr Input<mediapipe::NormalizedLandmarkList>::Optional
+      kInNormLandmarkList{"NORM_LANDMARKS"};
+  static constexpr Input<std::pair<int, int>>::Optional kImageSize{
+      "IMAGE_SIZE"};
+  static constexpr Output<std::vector<Tensor>> kOutTensors{"TENSORS"};
+  MEDIAPIPE_NODE_INTERFACE(LandmarksToTensorCalculator, kInLandmarkList,
+                           kInNormLandmarkList, kImageSize, kOutTensors);
 };
 
 }  // namespace api2

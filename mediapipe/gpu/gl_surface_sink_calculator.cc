@@ -39,7 +39,6 @@ enum { kAttribVertex,
 //   VIDEO or index 0: GpuBuffers to be rendered.
 // Side inputs:
 //   SURFACE: unique_ptr to an EglSurfaceHolder to draw to.
-//   GPU_SHARED: shared GPU resources.
 //
 // See GlSurfaceSinkCalculatorOptions for options.
 class GlSurfaceSinkCalculator : public Node {

@@ -133,7 +133,7 @@ _encode_binary_proto = rule(
         "_proto_compiler": attr.label(
             executable = True,
             default = Label(PROTOC),
-            cfg = "host",
+            cfg = "exec",
         ),
         "deps": attr.label_list(
             providers = [[ProtoInfo], ["proto"]],
@@ -206,7 +206,7 @@ generate_proto_descriptor_set = rule(
         "_proto_compiler": attr.label(
             executable = True,
             default = Label(PROTOC),
-            cfg = "host",
+            cfg = "exec",
         ),
         "deps": attr.label_list(
             providers = [[ProtoInfo], ["proto"]],

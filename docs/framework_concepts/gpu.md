@@ -1,5 +1,6 @@
 ---
-layout: default
+layout: forward
+target: https://developers.google.com/mediapipe/framework/framework_concepts/gpu
 title: GPU
 parent: Framework Concepts
 nav_order: 5
@@ -149,7 +150,7 @@ When possible, these calculators use platform-specific functionality to share da
 
 The below diagram shows the data flow in a mobile application that captures video from the camera, runs it through a MediaPipe graph, and renders the output on the screen in real time. The dashed line indicates which parts are inside the MediaPipe graph proper. This application runs a Canny edge-detection filter on the CPU using OpenCV, and overlays it on top of the original video using the GPU.
 
-![How GPU calculators interact](../images/gpu_example_graph.png)
+![How GPU calculators interact](https://mediapipe.dev/images/gpu_example_graph.png)
 
 Video frames from the camera are fed into the graph as `GpuBuffer` packets. The
 input stream is accessed by two calculators in parallel.

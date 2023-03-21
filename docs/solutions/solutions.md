@@ -13,6 +13,22 @@ has_toc: false
 {:toc}
 ---
 
+**Attention:** *Thank you for your interest in MediaPipe Solutions. We have
+ended support for
+[these MediaPipe Legacy Solutions](https://developers.google.com/mediapipe/solutions/guide#legacy)
+as of March 1, 2023. All other
+[MediaPipe Legacy Solutions will be upgraded](https://developers.google.com/mediapipe/solutions/guide#legacy)
+to a new MediaPipe Solution. The
+[code repository](https://github.com/google/mediapipe/tree/master/mediapipe)
+and prebuilt binaries for all MediaPipe Legacy Solutions will continue to
+be provided on an as-is basis. We encourage you to check out the new MediaPipe
+Solutions at:
+[https://developers.google.com/mediapipe/solutions](https://developers.google.com/mediapipe/solutions)*
+
+*This notice and web page will be removed on June 1, 2023.*
+
+----
+
 MediaPipe offers open source cross-platform, customizable ML solutions for live
 and streaming media.
 
