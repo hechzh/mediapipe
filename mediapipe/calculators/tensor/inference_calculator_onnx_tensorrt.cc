@@ -77,12 +77,12 @@ absl::Status InferenceCalculatorOnnxTensorRTImpl::LoadModel(const std::string& p
     m_input_names.reserve(num_input_nodes);
     m_output_names.reserve(num_output_nodes);
     for (int i = 0; i < num_input_nodes; i++) {
-        char* input_name = session_->GetInputName(i, allocator);
-        m_input_names.push_back(input_name);
+        auto input_name_ptr = session_->GetInputNameAllocated(i, allocator);
+        m_input_names.push_back(input_name_ptr.get());
     }
     for (int i = 0; i < num_output_nodes; i++) {
-        char* output_name = session_->GetOutputName(i, allocator);
-        m_output_names.push_back(output_name);
+        auto output_name_ptr = session_->GetOutputNameAllocated(i, allocator);
+        m_output_names.push_back(output_name_ptr.get());
     }
     return absl::OkStatus();
 }
